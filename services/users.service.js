@@ -102,6 +102,7 @@ module.exports = {
 		},
 
 		me: {
+			auth: "required",
 			handler(ctx) {
 				return this.getById(ctx, { id: ctx.meta.user._id })
 					.then(user => {
@@ -119,6 +120,7 @@ module.exports = {
 		},
 
 		updateMyself: {
+			auth: "required",
 			params: {
 				user: { type: "object", props: {
 					username: { type: "string", min: 2, optional: true },
@@ -170,26 +172,5 @@ module.exports = {
 						return res[0];
 				});
 		},
-	},
-
-	/**
-	 * Service created lifecycle event handler
-	 */
-	created() {
-
-	},
-
-	/**
-	 * Service started lifecycle event handler
-	 */
-	started() {
-
-	},
-
-	/**
-	 * Service stopped lifecycle event handler
-	 */
-	stopped() {
-
-	}	
+	}
 };

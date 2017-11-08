@@ -11,48 +11,48 @@ module.exports = {
 	 * Default settings
 	 */
 	settings: {
-
+		fields: ["_id", "title", "slug", "description", "body", "tagList", "createdAt", "updatedAt", "favoritesCount", "author", "comments"],
+		populates: {
+			"author": {
+				action: "users.get",
+				params: {
+					fields: ["username", "bio", "image"]
+				}
+			},
+			"comments": {
+				action: "comments.get",
+				params: {
+					fields: ["_id", "body", "author"],
+					populates: ["author"]
+				}
+			}
+		}
 	},
 
 	/**
 	 * Actions
 	 */
 	actions: {
+		list: {
+			params: {
 
-	},
+			},
+			handler(ctx) {
 
-	/**
-	 * Events
-	 */
-	events: {
-
+			}
+		}
 	},
 
 	/**
 	 * Methods
 	 */
 	methods: {
-
-	},
-
-	/**
-	 * Service created lifecycle event handler
-	 */
-	created() {
-
-	},
-
-	/**
-	 * Service started lifecycle event handler
-	 */
-	started() {
-
-	},
-
-	/**
-	 * Service stopped lifecycle event handler
-	 */
-	stopped() {
-
-	}	
+		findOne(query) {
+			return this.adapter.find({ query })
+				.then(res => {
+					if (res && res.length > 0)
+						return res[0];
+				});
+		}
+	}
 };

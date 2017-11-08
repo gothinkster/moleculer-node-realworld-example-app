@@ -1,6 +1,7 @@
 "use strict";
 
 const ApiGateway = require("moleculer-web");
+const { ForbiddenError, UnAuthorizedError } = ApiGateway.Errors;
 
 module.exports = {
 	name: "api",
@@ -23,7 +24,9 @@ module.exports = {
 			aliases: {
 				"REST users": "users",
 				"GET /user": "users.me",
-				"PUT /user": "users.updateMyself"
+				"PUT /user": "users.updateMyself",
+
+				"REST articles": "articles"
 			},
 
 			cors: true,
@@ -57,17 +60,24 @@ module.exports = {
 				token = req.headers.authorization.split(" ")[1];
 			}
 
-			if (token) {
-				// Verify JWT token
-				return ctx.call("users.resolveToken", { token })
-					.then(user => {
-						if (user) {
-							this.logger.info("Authenticated via JWT: ", user.username);
-							ctx.meta.user = user;
-						}
-					});
-			}
-			return this.Promise.resolve();
+			return this.Promise.resolve(token)
+				.then(token => {
+					if (token) {
+						// Verify JWT token
+						return ctx.call("users.resolveToken", { token })
+							.then(user => {
+								if (user) {
+									this.logger.info("Authenticated via JWT: ", user.username);
+									ctx.meta.user = user;
+								}
+								return user;
+							});
+					}
+				})
+				.then(user => {
+					if (req.$endpoint.action.auth == "required" && !user)
+						return this.Promise.reject(new UnAuthorizedError());
+				});
 		},
 	}
 };

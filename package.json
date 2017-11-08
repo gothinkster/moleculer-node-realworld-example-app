@@ -27,7 +27,8 @@
     "lodash": "4.17.4",
     "moleculer": "^0.11.0",
     "moleculer-db": "0.6.1",
-    "moleculer-web": "0.6.0-beta6"
+    "moleculer-web": "0.6.0-beta6",
+    "slug": "0.9.1"
   },
   "repository": {
     "type": "git",
