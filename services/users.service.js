@@ -15,9 +15,13 @@ module.exports = {
 	 * Default settings
 	 */
 	settings: {
+		/** Secret for JWT */
 		JWT_SECRET: process.env.JWT_SECRET || "jwt-conduit-secret",
 
+		/** Public fields */
 		fields: ["_id", "username", "email", "bio", "image"],
+
+		/** Validator schema for entity */
 		entityValidator: {
 			username: { type: "string", min: 2 },
 			password: { type: "string", min: 6 },
@@ -31,6 +35,9 @@ module.exports = {
 	 * Actions
 	 */
 	actions: {
+		/**
+		 * Register a new user
+		 */
 		create: {
 			handler(ctx) {
 				let entity = ctx.params.user;
@@ -48,6 +55,9 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Login with username & password
+		 */
 		login: {
 			params: {
 				user: { type: "object", props: {
@@ -80,6 +90,9 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Get user by JWT token (for API GW authentication)
+		 */
 		resolveToken: {
 			params: {
 				token: "string"
@@ -101,6 +114,9 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Get current user entity
+		 */
 		me: {
 			auth: "required",
 			handler(ctx) {
@@ -119,6 +135,9 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Update current user entity
+		 */
 		updateMyself: {
 			auth: "required",
 			params: {
@@ -153,6 +172,11 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
+		/**
+		 * Generate a JWT token from user entity
+		 * 
+		 * @param {Object} user 
+		 */
 		generateJWT(user) {
 			const today = new Date();
 			const exp = new Date(today);
@@ -165,6 +189,11 @@ module.exports = {
 			}, this.settings.JWT_SECRET);
 		},
 
+		/**
+		 * Find the first result item
+		 * 
+		 * @param {*} query 
+		 */
 		findOne(query) {
 			return this.adapter.find({ query })
 				.then(res => {

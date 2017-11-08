@@ -16,20 +16,19 @@ module.exports = {
 
 			authorization: true,
 
-			whitelist: [
-				// Access to any actions in all services
-				"*"
-			],
-
 			aliases: {
 				"REST users": "users",
+
 				"GET /user": "users.me",
 				"PUT /user": "users.updateMyself",
 
 				"REST articles": "articles"
 			},
 
+			mappingPolicy: "restrict",
+
 			cors: true,
+
 			bodyParsers: {
 				json: true,
 				urlencoded: {
@@ -55,9 +54,10 @@ module.exports = {
 		 */
 		authorize(ctx, route, req) {
 			let token;
-			if (req.headers.authorization && req.headers.authorization.split(" ")[0] === "Token" ||
-				req.headers.authorization && req.headers.authorization.split(" ")[0] === "Bearer") {
-				token = req.headers.authorization.split(" ")[1];
+			if (req.headers.authorization) {
+				let type = req.headers.authorization.split(" ")[0];
+				if (type === "Token" || type === "Bearer")
+					token = req.headers.authorization.split(" ")[1];
 			}
 
 			return this.Promise.resolve(token)
