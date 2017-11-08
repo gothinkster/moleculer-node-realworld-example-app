@@ -78,6 +78,72 @@ module.exports = {
 					})
 					.then(user => ({ user }));
 			}
+		},
+
+		resolveToken: {
+			params: {
+				token: "string"
+			},
+			handler(ctx) {
+				return new this.Promise((resolve, reject) => {
+					jwt.verify(ctx.params.token, this.settings.JWT_SECRET, (err, decoded) => {
+						if (err)
+							return reject(err);
+
+						resolve(decoded);
+					});
+
+				})
+					.then(decoded => {
+						if (decoded.id)
+							return this.getById(ctx, { id: decoded.id });
+					});
+			}
+		},
+
+		me: {
+			handler(ctx) {
+				return this.getById(ctx, { id: ctx.meta.user._id })
+					.then(user => {
+						if (!user)
+							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+
+						return this.transformDocuments(ctx, {}, user);
+					})
+					.then(user => {
+						user.token = this.generateJWT(user);
+						return user;
+					})
+					.then(user => ({ user }));
+			}
+		},
+
+		updateMyself: {
+			params: {
+				user: { type: "object", props: {
+					username: { type: "string", min: 2, optional: true },
+					password: { type: "string", min: 6, optional: true },
+					email: { type: "email", optional: true },
+					bio: { type: "string", optional: true },
+					image: { type: "string", optional: true },
+				}}
+			},
+			handler(ctx) {
+				const newData = ctx.params.user;
+				const update = {
+					"$set": newData
+				};
+				return this.updateById(ctx, {
+					id: ctx.meta.user._id,
+					update
+				})
+					.then(user => {
+						user.token = this.generateJWT(user);
+						return user;
+					})
+					.then(user => ({ user }));
+
+			}
 		}
 	},
 
