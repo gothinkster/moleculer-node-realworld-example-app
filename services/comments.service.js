@@ -1,7 +1,11 @@
 "use strict";
 
+const DbService = require("moleculer-db");
+
 module.exports = {
-	name: "greeter",
+	name: "comments",
+	mixins: [DbService],
+	adapter: new DbService.MemoryAdapter({ filename: "./data/comments.db" }),
 
 	/**
 	 * Default settings
@@ -15,28 +19,6 @@ module.exports = {
 	 */
 	actions: {
 
-		/**
-		 * Say a 'Hello'
-		 * 
-		 * @returns 
-		 */
-		hello() {
-			return "Hello Moleculer";
-		},
-
-		/**
-		 * Welcome a username
-		 * 
-		 * @param {String} name - User name
-		 */
-		welcome: {
-			params: {
-				name: "string"
-			},
-			handler(ctx) {
-				return `Welcome, ${ctx.params.name}`;
-			}
-		}
 	},
 
 	/**

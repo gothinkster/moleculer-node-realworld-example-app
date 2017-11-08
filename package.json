@@ -1,7 +1,7 @@
 {
   "name": "moleculer-realworld-example-app",
   "version": "1.0.0",
-  "description": "My Moleculer project",
+  "description": "RealWorld example app with Moleculer microservices framework",
   "scripts": {
     "dev": "moleculer-runner --repl --hot services",
     "start": "moleculer-runner services",
@@ -11,7 +11,8 @@
   },
   "keywords": [
     "microservices",
-    "moleculer"
+    "moleculer",
+    "realworld"
   ],
   "author": "",
   "devDependencies": {
@@ -21,8 +22,16 @@
     "moleculer-repl": "^0.3.0"
   },
   "dependencies": {
-    "moleculer-web": "^0.5.0",
-    "moleculer": "^0.11.0"
+    "bcrypt": "1.0.3",
+    "jsonwebtoken": "8.1.0",
+    "lodash": "4.17.4",
+    "moleculer": "^0.11.0",
+    "moleculer-db": "0.6.1",
+    "moleculer-web": "0.6.0-beta6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ice-services/moleculer-realworld-example-app.git"
   },
   "engines": {
     "node": ">= 6.x.x"

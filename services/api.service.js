@@ -11,12 +11,29 @@ module.exports = {
 		port: process.env.PORT || 3000,
 
 		routes: [{
-			path: "/",
+			path: "/api",
+
 			whitelist: [
 				// Access to any actions in all services
 				"*"
-			]
-		}]
+			],
+
+			aliases: {
+				"REST users": "users"
+			},
+
+			cors: true,
+			bodyParsers: {
+				json: true,
+				urlencoded: {
+					extended: false
+				}
+			}
+		}],
+
+		assets: {
+			folder: "./public"
+		}
 
 	}
 };
