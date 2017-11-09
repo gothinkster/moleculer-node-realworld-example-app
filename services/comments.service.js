@@ -11,7 +11,20 @@ module.exports = {
 	 * Default settings
 	 */
 	settings: {
-
+		fields: ["_id", "author", "article", "body", "createdAt", "updatedAt"],
+		populates: {
+			"author": {
+				action: "users.get",
+				params: {
+					fields: ["username", "bio", "image"]
+				}
+			}
+		},
+		entityValidator: {
+			author: { type: "string" },
+			article: { type: "string" },
+			body: { type: "string" },
+		}
 	},
 
 	/**

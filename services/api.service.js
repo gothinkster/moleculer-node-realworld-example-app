@@ -2,7 +2,7 @@
 
 const _ = require("lodash");
 const ApiGateway = require("moleculer-web");
-const { ForbiddenError, UnAuthorizedError } = ApiGateway.Errors;
+const { UnAuthorizedError } = ApiGateway.Errors;
 
 module.exports = {
 	name: "api",
@@ -19,28 +19,33 @@ module.exports = {
 
 			aliases: {
 				// Login
-				"POST users/login": "users.login",
+				"POST /users/login": "users.login",
 
 				// Users
-				"REST users": "users",
+				"REST /users": "users",
 
 				// Current user
 				"GET /user": "users.me",
 				"PUT /user": "users.updateMyself",
 
 				// Articles
-				"GET articles/feed": "articles.feed",
-				"REST articles": "articles",
-				"GET tags": "articles.tags",
+				"GET /articles/feed": "articles.feed",
+				"REST /articles": "articles",
+				"GET /tags": "articles.tags",
+
+				// Comments
+				"GET /articles/:slug/comments": "articles.comments",
+				"POST /articles/:slug/comments": "articles.addComment",
+				"DELETE /articles/:slug/comments": "articles.removeComment",
 
 				// Favorites
-				"POST articles/:slug/favorite": "articles.favorite",
-				"DELETE articles/:slug/favorite": "articles.unfavorite",
+				"POST /articles/:slug/favorite": "articles.favorite",
+				"DELETE /articles/:slug/favorite": "articles.unfavorite",
 
 				// Profile
-				"GET profiles/:username": "users.profile",
-				"POST profiles/:username/follow": "users.follow",
-				"DELETE profiles/:username/follow": "users.unfollow",
+				"GET /profiles/:username": "users.profile",
+				"POST /profiles/:username/follow": "users.follow",
+				"DELETE /profiles/:username/follow": "users.unfollow",
 			},
 
 			mappingPolicy: "restrict",

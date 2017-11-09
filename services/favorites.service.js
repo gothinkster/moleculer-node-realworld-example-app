@@ -31,7 +31,7 @@ module.exports = {
 						if (item)
 							return this.Promise.reject(new MoleculerClientError("Articles has already favorited"));
 
-						return this.create(ctx, { article, user }, {});
+						return this.create(ctx, { article, user, createdAt: new Date() }, {});
 					});
 			}
 		},

@@ -31,7 +31,7 @@ module.exports = {
 						if (item)
 							return this.Promise.reject(new MoleculerClientError("User has already followed"));
 
-						return this.create(ctx, { follow, user }, {});
+						return this.create(ctx, { follow, user, createdAt: new Date() }, {});
 					});
 			}
 		},
