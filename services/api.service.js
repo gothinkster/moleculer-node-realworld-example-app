@@ -18,17 +18,28 @@ module.exports = {
 			authorization: true,
 
 			aliases: {
+				// Login
 				"POST users/login": "users.login",
 
+				// Users
 				"REST users": "users",
 
+				// Current user
 				"GET /user": "users.me",
 				"PUT /user": "users.updateMyself",
 
+				// Articles
 				"REST articles": "articles",
-				
+				"GET tags": "articles.tags",
+
+				// Favorites
 				"POST articles/:slug/favorite": "articles.favorite",
 				"DELETE articles/:slug/favorite": "articles.unfavorite",
+
+				// Profile
+				"GET profiles/:username": "users.profile",
+				"POST profiles/:username/follow": "users.follow",
+				"DELETE profiles/:username/follow": "users.unfollow",
 			},
 
 			mappingPolicy: "restrict",

@@ -80,6 +80,15 @@ module.exports = {
 						return this.removeById(ctx, { id: item._id }, {});
 					});
 			}
+		},
+
+		removeByArticle: {
+			params: {
+				article: { type: "string" }
+			},
+			handler(ctx) {
+				return this.removeMany(ctx, { query: ctx.params });
+			}
 		}
 	},
 

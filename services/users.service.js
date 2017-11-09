@@ -152,7 +152,62 @@ module.exports = {
 				}).then(user => this.transformEntity(user, true));
 
 			}
-		}
+		},
+
+		/**
+		 * Get current user entity
+		 */
+		profile: {
+			params: {
+				username: { type: "string" }
+			},
+			handler(ctx) {
+				return this.findOne({ username: ctx.params.username })
+					.then(user => {
+						if (!user)
+							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+
+						return this.transformDocuments(ctx, {}, user);
+					})
+					.then(user => this.transformProfile(ctx, user, ctx.meta.user));
+			}
+		},
+
+		follow: {
+			auth: "required",
+			params: {
+				username: { type: "string" }
+			},
+			handler(ctx) {
+				return this.findOne({ username: ctx.params.username })
+					.then(user => {
+						if (!user)
+							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+
+						return ctx.call("follows.add", { user: ctx.meta.user._id, follow: user._id })
+							.then(() => this.transformDocuments(ctx, {}, user));
+					})
+					.then(user => this.transformProfile(ctx, user, ctx.meta.user));
+			}
+		},	
+
+		unfollow: {
+			auth: "required",
+			params: {
+				username: { type: "string" }
+			},
+			handler(ctx) {
+				return this.findOne({ username: ctx.params.username })
+					.then(user => {
+						if (!user)
+							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+
+						return ctx.call("follows.delete", { user: ctx.meta.user._id, follow: user._id })
+							.then(() => this.transformDocuments(ctx, {}, user));
+					})
+					.then(user => this.transformProfile(ctx, user, ctx.meta.user));
+			}
+		}		
 	},
 
 	/**
@@ -202,6 +257,26 @@ module.exports = {
 			}
 
 			return { user };
+		},
+
+		/**
+		 * Transform returned user entity as profile.
+		 * 
+		 * @param {Object} user 
+		 * @param {Object?} loggedInUser 
+		 */
+		transformProfile(ctx, user, loggedInUser) {
+			if (loggedInUser) {
+				return ctx.call("follows.has", { user: loggedInUser._id, follow: user._id })
+					.then(res => {
+						user.following = res;
+						return { profile: user };
+					});
+			}
+
+			user.following = false;
+
+			return { profile: user };
 		}
 	}
 };

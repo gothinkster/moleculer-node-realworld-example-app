@@ -2,6 +2,7 @@
 
 const { MoleculerClientError } = require("moleculer").Errors;
 
+const _ = require("lodash");
 const slug = require("slug");
 const DbService = require("moleculer-db");
 
@@ -70,7 +71,7 @@ module.exports = {
 				let newData = ctx.params.article;
 				newData.updatedAt = new Date();
 				// the 'id' is the slug
-				return Promise.resolve(ctx.params.id)
+				return this.Promise.resolve(ctx.params.id)
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
@@ -123,15 +124,21 @@ module.exports = {
 									params.query.author = users[0]._id;
 								});
 						}
-						/*if (ctx.params.favorited) {
+						if (ctx.params.favorited) {
 							return ctx.call("users.find", { query: { username: ctx.params.favorited } })
 								.then(users => {
 									if (users.length == 0)
 										return this.Promise.reject(new MoleculerClientError("Author not found"));
 
-									params.query.author = users[0]._id;
+									return users[0]._id;
+								})
+								.then(user => {
+									return ctx.call("favorites.find", { fields: ["article"], query: { user }})
+										.then(list => {
+											params.query._id = { $in: list.map(o => o.article) };
+										});
 								});
-						}*/
+						}
 					})
 					.then(() => this.Promise.all([
 						// Get rows
@@ -158,15 +165,33 @@ module.exports = {
 			}
 		},	
 
+		remove: {
+			params: {
+				id: { type: "any" }
+			},
+			handler(ctx) {
+				return this.findOne({slug: ctx.params.id})
+					.then(entity => {
+						return this.removeById(ctx, { id: entity._id })
+							.then(() => ctx.call("favorites.removeByArticle", { article: entity._id }));
+					});
+			}
+		},
+
 		favorite: {
 			auth: "required",
 			params: {
 				slug: { type: "string" }
 			},
 			handler(ctx) {
-				return Promise.resolve(ctx.params.slug)
+				return this.Promise.resolve(ctx.params.slug)
 					.then(slug => this.findOne({ slug }))
-					.then(article => ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article))
+					.then(article => {
+						if (!article)
+							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							
+						return ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article);
+					})
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
@@ -177,10 +202,26 @@ module.exports = {
 				slug: { type: "string" }
 			},
 			handler(ctx) {
-				return Promise.resolve(ctx.params.slug)
+				return this.Promise.resolve(ctx.params.slug)
 					.then(slug => this.findOne({ slug }))
-					.then(article => ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article))
+					.then(article => {
+						if (!article)
+							return this.Promise.reject(new MoleculerClientError("Article not found"));
+
+						return ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article);
+					})
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+			}
+		},
+
+		tags: {
+			handler(ctx) {
+				return this.Promise.resolve()
+					.then(() => ctx.call("articles.find", { fields: ["tagList"]}))
+					.then(list => {
+						return _.uniq(_.compact(_.flattenDeep(list.map(o => o.tagList))));
+					})
+					.then(tags => ({ tags }));
 			}
 		}	
 	},
