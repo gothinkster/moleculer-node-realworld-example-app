@@ -1,5 +1,6 @@
 "use strict";
 
+const _ = require("lodash");
 const ApiGateway = require("moleculer-web");
 const { ForbiddenError, UnAuthorizedError } = ApiGateway.Errors;
 
@@ -68,7 +69,8 @@ module.exports = {
 							.then(user => {
 								if (user) {
 									this.logger.info("Authenticated via JWT: ", user.username);
-									ctx.meta.user = user;
+									// Reduce user fields (it would be transferred to other nodes)
+									ctx.meta.user = _.pick(user, ["_id", "username", "email", "image"]);
 								}
 								return user;
 							});

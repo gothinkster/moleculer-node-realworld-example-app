@@ -39,12 +39,15 @@ module.exports = {
 		 * Register a new user
 		 */
 		create: {
+			params: {
+				user: { type: "object" }
+			},			
 			handler(ctx) {
 				let entity = ctx.params.user;
 				entity.password = bcrypt.hashSync(entity.password, 10);
 				entity.bio = entity.bio || "";
 				entity.image = entity.image || null;
-				entity.createdAt = Date.now();
+				entity.createdAt = new Date();
 
 				return this.create(ctx, entity, {})
 					.then(user => {
@@ -151,6 +154,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				const newData = ctx.params.user;
+				newData.updatedAt = new Date();
 				const update = {
 					"$set": newData
 				};
