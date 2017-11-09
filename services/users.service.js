@@ -50,11 +50,7 @@ module.exports = {
 				entity.createdAt = new Date();
 
 				return this.create(ctx, entity, {})
-					.then(user => {
-						user.token = this.generateJWT(user);
-						return user;
-					})
-					.then(user => ({ user }));
+					.then(user => this.transformEntity(user, true));
 			}
 		},
 
@@ -85,11 +81,7 @@ module.exports = {
 							return this.transformDocuments(ctx, {}, user);
 						});
 					})
-					.then(user => {
-						user.token = this.generateJWT(user);
-						return user;
-					})
-					.then(user => ({ user }));
+					.then(user => this.transformEntity(user, true));
 			}
 		},
 
@@ -130,11 +122,7 @@ module.exports = {
 
 						return this.transformDocuments(ctx, {}, user);
 					})
-					.then(user => {
-						user.token = this.generateJWT(user);
-						return user;
-					})
-					.then(user => ({ user }));
+					.then(user => this.transformEntity(user, true));
 			}
 		},
 
@@ -161,12 +149,7 @@ module.exports = {
 				return this.updateById(ctx, {
 					id: ctx.meta.user._id,
 					update
-				})
-					.then(user => {
-						user.token = this.generateJWT(user);
-						return user;
-					})
-					.then(user => ({ user }));
+				}).then(user => this.transformEntity(user, true));
 
 			}
 		}
@@ -205,5 +188,20 @@ module.exports = {
 						return res[0];
 				});
 		},
+
+		/**
+		 * Transform returned user entity. Generate JWT token if neccessary.
+		 * 
+		 * @param {Object} user 
+		 * @param {Boolean} withToken 
+		 */
+		transformEntity(user, withToken) {
+			if (user) {
+				if (withToken)
+					user.token = this.generateJWT(user);
+			}
+
+			return { user };
+		}
 	}
 };

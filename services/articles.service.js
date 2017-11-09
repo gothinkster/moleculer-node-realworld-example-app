@@ -56,7 +56,7 @@ module.exports = {
 				entity.updatedAt = new Date();
 
 				return this.create(ctx, entity, { populate: ["author"]})
-					.then(this.transformResult);
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
 
@@ -85,7 +85,7 @@ module.exports = {
 							update
 						});
 					})
-					.then(this.transformResult);
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
 
@@ -140,12 +140,11 @@ module.exports = {
 						// Get count of all rows
 						this.count(ctx, params)
 
-					])).then(res => {
-						const r = this.transformResult(res[0]);
-						r.articlesCount = res[1];
-
-						return r;
-					});
+					])).then(res => this.transformResult(ctx, res[0], ctx.meta.user)
+						.then(r => {
+							r.articlesCount = res[1];
+							return r;
+						}));
 			}
 		},
 
@@ -155,9 +154,35 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.findOne({slug: ctx.params.id})
-					.then(this.transformResult);
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
-		},		
+		},	
+
+		favorite: {
+			auth: "required",
+			params: {
+				slug: { type: "string" }
+			},
+			handler(ctx) {
+				return Promise.resolve(ctx.params.slug)
+					.then(slug => this.findOne({ slug }))
+					.then(article => ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article))
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+			}
+		},
+
+		unfavorite: {
+			auth: "required",
+			params: {
+				slug: { type: "string" }
+			},
+			handler(ctx) {
+				return Promise.resolve(ctx.params.slug)
+					.then(slug => this.findOne({ slug }))
+					.then(article => ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article))
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+			}
+		}	
 	},
 
 	/**
@@ -172,27 +197,40 @@ module.exports = {
 				});
 		},
 
-		transformResult(entities) {
+		transformResult(ctx, entities, user) {
 			if (Array.isArray(entities)) {
-				return {
-					articles: entities.map(this.transformEntity)
-				};
+				return this.Promise.map(entities, item => this.transformEntity(ctx, item, user))
+					.then(articles => ({ articles }));
 			} else {
-				return {
-					article: this.transformEntity(entities)
-				};
+				return this.transformEntity(ctx, entities, user)
+					.then(article => ({ article }));
 			}
 		},
 
-		transformEntity(entity) {
-			if (entity) {
-				// TODO
-				entity.favorited = false;
-				// TODO
-				entity.favoritesCount = 0;
-			}
+		transformEntity(ctx, entity, user) {
+			if (!entity) return this.Promise.resolve();
 
-			return entity;
+			return this.Promise.resolve(entity)
+				.then(entity => {
+					if (user) {
+						return ctx.call("favorites.has", { article: entity._id, user: user._id })
+							.then(favorited => {
+								entity.favorited = favorited;
+								return entity;
+							});
+					} else 
+						entity.favorited = false;
+
+					return entity;
+				})
+				.then(entity => {
+					return ctx.call("favorites.count", { article: entity._id })
+						.then(favoritesCount => {
+							entity.favoritesCount = favoritesCount;
+							return entity;
+						});
+				});
+
 		}
 	}
 };
