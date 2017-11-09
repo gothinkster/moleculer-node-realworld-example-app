@@ -29,6 +29,7 @@ module.exports = {
 				"PUT /user": "users.updateMyself",
 
 				// Articles
+				"GET articles/feed": "articles.feed",
 				"REST articles": "articles",
 				"GET tags": "articles.tags",
 

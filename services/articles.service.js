@@ -155,6 +155,46 @@ module.exports = {
 			}
 		},
 
+		feed: {
+			auth: "required",
+			params: {
+				limit: { type: "number", optional: true, convert: true },
+				offset: { type: "number", optional: true, convert: true },
+			},
+			handler(ctx) {
+				const limit = ctx.params.limit ? Number(ctx.params.limit) : 20;
+				const offset = ctx.params.offset ? Number(ctx.params.offset) : 0;
+
+				let params = {
+					limit,
+					offset,
+					sort: ["-createdAt"],
+					query: {}
+				};
+
+				return this.Promise.resolve()
+					.then(() => {
+						return ctx.call("follows.find", { fields: ["follow"], query: { user: ctx.meta.user._id } })
+							.then(list => {
+								const authors = _.uniq(_.compact(_.flattenDeep(list.map(o => o.follow))));
+								params.query.author = {"$in" : authors};
+							});						
+					})
+					.then(() => this.Promise.all([
+						// Get rows
+						this.find(ctx, params),
+
+						// Get count of all rows
+						this.count(ctx, params)
+
+					])).then(res => this.transformResult(ctx, res[0], ctx.meta.user)
+						.then(r => {
+							r.articlesCount = res[1];
+							return r;
+						}));
+			}
+		},
+
 		get: {
 			params: {
 				id: { type: "string" }
