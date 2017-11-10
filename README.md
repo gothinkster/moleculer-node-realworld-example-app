@@ -16,6 +16,12 @@ For more information on how to this works with other frontends/backends, head ov
 # How it works
 TODO
 
+# Example
+
+Glitch: https://glitch.com/edit/#!/realworld-moleculer
+
+Live demo on Glitch: https://realworld-moleculer.glitch.me
+
 ## Build Setup
 
 ``` bash
@@ -25,12 +31,9 @@ npm install
 # Start development mode with REPL
 npm run dev
 
-# Run unit tests
+# Start in production
+npm start
+
+# Run tests
 npm test
-
-# Run continuous test mode
-npm run ci
-
-# Run ESLint
-npm run lint
 ```
