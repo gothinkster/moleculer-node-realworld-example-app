@@ -20,7 +20,9 @@ Glitch: https://glitch.com/edit/#!/realworld-moleculer
 - `npm run dev` to start the local server
 - the API is available at http://localhost:3000/api
 
-Alternately, to quickly try out this repo in the cloud, you can [![Remix on Glitch](https://cdn.glitch.com/2703baf2-b643-4da7-ab91-7ee2a2d00b5b%2Fremix-button.svg)](https://glitch.com/edit/#!/remix/realworld-moleculer)
+Alternately, to quickly try out this repo in the cloud, you can 
+
+[![Remix on Glitch](https://cdn.glitch.com/2703baf2-b643-4da7-ab91-7ee2a2d00b5b%2Fremix-button.svg)](https://glitch.com/edit/#!/remix/realworld-moleculer)
 
 ### To get the Node server running locally with Docker
 TODO
@@ -31,7 +33,7 @@ TODO
 
 - [moleculer](https://github.com/ice-services/moleculer) - Microservices framework for NodeJS
 - [moleculer-web](https://github.com/ice-services/moleculer-web) - Official API Gateway service for Moleculer
-- [moleculer-db](https://github.com/ice-services/moleculer-db) - Database service for Moleculer
+- [moleculer-db](https://github.com/ice-services/moleculer-addons/tree/master/packages/moleculer-db#readme) - Database service for Moleculer
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) - For generating JWTs used by authentication
 - [bcrypt](https://github.com/kelektiv/node.bcrypt.js) - Hashing user password
 - [lodash](https://github.com/lodash/lodash) - Utility library
