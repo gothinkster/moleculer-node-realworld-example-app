@@ -8,7 +8,7 @@ This repo is functionality complete — PRs and issues welcome!
 
 Glitch project: https://glitch.com/edit/#!/realworld-moleculer
 
-*[React + Redux](https://github.com/icebob/react-redux-realworld-example-app) front-end UI is included*
+*[React + Redux](https://github.com/icebob/react-redux-realworld-example-app) front-end UI is included.*
 *For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.*
 
 ## Getting started
