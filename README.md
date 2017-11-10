@@ -47,6 +47,10 @@ TODO
 - `data/` - This folder contains the NeDB database files.
 
 ## Test
+
+**Tested with [realworld-server-tester](https://github.com/agrison/realworld-server-tester).**
+
+*Local tests is missing currently.*
 ```
 $ npm test
 ```
