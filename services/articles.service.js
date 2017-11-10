@@ -52,7 +52,7 @@ module.exports = {
 			handler(ctx) {
 				let entity = ctx.params.article;
 
-				entity.slug = slug(entity.title.toLowerCase()) + "-" + (Math.random() * Math.pow(36, 6) | 0).toString(36);
+				entity.slug = slug(entity.title, { lower: true }) + "-" + (Math.random() * Math.pow(36, 6) | 0).toString(36);
 				entity.author = ctx.meta.user._id;
 				entity.createdAt = new Date();
 				entity.updatedAt = new Date();
