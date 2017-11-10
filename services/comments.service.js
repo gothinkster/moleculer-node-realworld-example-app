@@ -1,5 +1,8 @@
 "use strict";
 
+const { MoleculerClientError } = require("moleculer").Errors;
+
+const _ = require("lodash");
 const DbService = require("moleculer-db");
 
 module.exports = {
@@ -16,7 +19,7 @@ module.exports = {
 			"author": {
 				action: "users.get",
 				params: {
-					fields: ["username", "bio", "image"]
+					fields: ["_id", "username", "bio", "image"]
 				}
 			}
 		},
@@ -32,13 +35,95 @@ module.exports = {
 	 */
 	actions: {
 
-	},
+		create: {
+			auth: "required",
+			params: {
+				article: { type: "string" },
+				comment: { type: "object" }
+			},
+			handler(ctx) {
+				let entity = ctx.params.comment;
 
-	/**
-	 * Events
-	 */
-	events: {
+				entity.article = ctx.params.article;
+				entity.author = ctx.meta.user._id;
+				entity.createdAt = new Date();
+				entity.updatedAt = new Date();
 
+				return this.create(ctx, entity, { populate: ["author"]})
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+			}
+		},
+
+		update: {
+			auth: "required",
+			params: {
+				id: { type: "string" },
+				comment: { type: "object" }
+			},
+			handler(ctx) {
+				let newData = ctx.params.comment;
+				newData.updatedAt = new Date();
+				
+				return this.Promise.resolve(ctx.params.id)
+					.then(id => {
+						const update = {
+							"$set": newData
+						};
+
+						return this.updateById(ctx, {
+							id,
+							update,
+							populate: ["author"]
+						});
+					})
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+			}
+		},
+
+		list: {
+			params: {
+				article: { type: "string" },
+				limit: { type: "number", optional: true, convert: true },
+				offset: { type: "number", optional: true, convert: true },
+			},
+			handler(ctx) {
+				const limit = ctx.params.limit ? Number(ctx.params.limit) : 20;
+				const offset = ctx.params.offset ? Number(ctx.params.offset) : 0;
+
+				let params = {
+					limit,
+					offset,
+					sort: ["-createdAt"],
+					populate: ["author"],
+					query: {
+						article: ctx.params.article
+					}
+				};
+
+				return this.Promise.resolve()
+					.then(() => this.Promise.all([
+						// Get rows
+						this.find(ctx, params),
+
+						// Get count of all rows
+						this.count(ctx, params)
+
+					])).then(res => this.transformResult(ctx, res[0], ctx.meta.user)
+						.then(r => {
+							r.commentsCount = res[1];
+							return r;
+						}));
+			}
+		},
+
+		remove: {
+			params: {
+				id: { type: "any" }
+			},
+			handler(ctx) {
+				return this.removeById(ctx, { id: ctx.params.id });
+			}
+		}
 	},
 
 	/**
@@ -46,26 +131,44 @@ module.exports = {
 	 */
 	methods: {
 
-	},
+		findOne(query) {
+			return this.adapter.find({ query })
+				.then(res => {
+					if (res && res.length > 0)
+						return res[0];
+				});
+		},
 
-	/**
-	 * Service created lifecycle event handler
-	 */
-	created() {
+		transformResult(ctx, entities, user) {
+			if (Array.isArray(entities)) {
+				return this.Promise.map(entities, item => this.transformEntity(ctx, item, user))
+					.then(comments => ({ comments }));
+			} else {
+				return this.transformEntity(ctx, entities, user)
+					.then(comment => ({ comment }));
+			}
+		},
 
-	},
+		transformEntity(ctx, entity, loggedInUser) {
+			if (!entity) return this.Promise.resolve();
 
-	/**
-	 * Service started lifecycle event handler
-	 */
-	started() {
+			return this.Promise.resolve(entity)
+				.then(entity => {
+					entity.id = entity._id;
 
-	},
+					if (loggedInUser) {
+						return ctx.call("follows.has", { user: loggedInUser._id, follow: entity.author._id })
+							.then(res => {
+								entity.author.following = res;
+								return entity;
+							});
+					}
 
-	/**
-	 * Service stopped lifecycle event handler
-	 */
-	stopped() {
+					entity.author.following = false;					
 
-	}	
+					return entity;
+				});
+
+		}
+	}
 };

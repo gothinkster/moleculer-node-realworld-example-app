@@ -36,7 +36,8 @@ module.exports = {
 				// Comments
 				"GET /articles/:slug/comments": "articles.comments",
 				"POST /articles/:slug/comments": "articles.addComment",
-				"DELETE /articles/:slug/comments": "articles.removeComment",
+				"PUT /articles/:slug/comments/:commentID": "articles.updateComment",
+				"DELETE /articles/:slug/comments/:commentID": "articles.removeComment",
 
 				// Favorites
 				"POST /articles/:slug/favorite": "articles.favorite",

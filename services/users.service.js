@@ -262,10 +262,13 @@ module.exports = {
 		/**
 		 * Transform returned user entity as profile.
 		 * 
+		 * @param {Context} ctx
 		 * @param {Object} user 
 		 * @param {Object?} loggedInUser 
 		 */
 		transformProfile(ctx, user, loggedInUser) {
+			user.image = user.image || "https://static.productionready.io/images/smiley-cyrus.jpg";
+
 			if (loggedInUser) {
 				return ctx.call("follows.has", { user: loggedInUser._id, follow: user._id })
 					.then(res => {

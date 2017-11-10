@@ -169,6 +169,7 @@ module.exports = {
 					limit,
 					offset,
 					sort: ["-createdAt"],
+					populate: ["author"],
 					query: {}
 				};
 
@@ -201,6 +202,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.findOne({slug: ctx.params.id})
+					.then(docs => this.transformDocuments(ctx, { populate: ["author"] }, docs))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},	
@@ -262,6 +264,74 @@ module.exports = {
 						return _.uniq(_.compact(_.flattenDeep(list.map(o => o.tagList))));
 					})
 					.then(tags => ({ tags }));
+			}
+		},
+
+		comments: {
+			params: {
+				slug: { type: "string" }
+			},
+			handler(ctx) {
+				return this.Promise.resolve(ctx.params.slug)
+					.then(slug => this.findOne({ slug }))
+					.then(article => {
+						if (!article)
+							return this.Promise.reject(new MoleculerClientError("Article not found"));
+
+						return ctx.call("comments.list", { article: article._id });
+					});
+			}
+		},	
+
+		addComment: {
+			params: {
+				slug: { type: "string" },
+				comment: { type: "object" }
+			},
+			handler(ctx) {
+				return this.Promise.resolve(ctx.params.slug)
+					.then(slug => this.findOne({ slug }))
+					.then(article => {
+						if (!article)
+							return this.Promise.reject(new MoleculerClientError("Article not found"));
+
+						return ctx.call("comments.create", { article: article._id, comment: ctx.params.comment });
+					});
+			}
+		},	
+
+		updateComment: {
+			params: {
+				slug: { type: "string" },
+				commentID: { type: "string" },
+				comment: { type: "object" }
+			},
+			handler(ctx) {
+				return this.Promise.resolve(ctx.params.slug)
+					.then(slug => this.findOne({ slug }))
+					.then(article => {
+						if (!article)
+							return this.Promise.reject(new MoleculerClientError("Article not found"));
+
+						return ctx.call("comments.update", { id: ctx.params.commentID, comment: ctx.params.comment });
+					});
+			}
+		},	
+
+		removeComment: {
+			params: {
+				slug: { type: "string" },
+				commentID: { type: "string" }
+			},
+			handler(ctx) {
+				return this.Promise.resolve(ctx.params.slug)
+					.then(slug => this.findOne({ slug }))
+					.then(article => {
+						if (!article)
+							return this.Promise.reject(new MoleculerClientError("Article not found"));
+
+						return ctx.call("comments.remove", { id: ctx.params.commentID });
+					});
 			}
 		}	
 	},
