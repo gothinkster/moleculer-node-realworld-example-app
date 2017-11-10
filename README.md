@@ -9,6 +9,7 @@ For more information on how to this works with other frontends/backends, head ov
 
 Glitch: https://glitch.com/edit/#!/realworld-moleculer
 
+*[React + Redux](https://github.com/icebob/react-redux-realworld-example-app) front-end UI is included*
 
 ## Getting started
 
