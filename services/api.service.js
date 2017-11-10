@@ -54,7 +54,9 @@ module.exports = {
 			cors: true,
 
 			bodyParsers: {
-				json: true,
+				json: {
+					strict: false
+				},
 				urlencoded: {
 					extended: false
 				}
@@ -63,7 +65,10 @@ module.exports = {
 
 		assets: {
 			folder: "./public"
-		}
+		},
+
+		logRequestParams: "info",
+		logResponseData: "info",
 
 	},
 
@@ -94,6 +99,7 @@ module.exports = {
 									this.logger.info("Authenticated via JWT: ", user.username);
 									// Reduce user fields (it would be transferred to other nodes)
 									ctx.meta.user = _.pick(user, ["_id", "username", "email", "image"]);
+									ctx.meta.token = token;
 								}
 								return user;
 							})
@@ -108,5 +114,30 @@ module.exports = {
 						return this.Promise.reject(new UnAuthorizedError());
 				});
 		},
+
+		sendError(req, res, err) {
+			if (err.code == 422) {
+				res.setHeader("Content-type", "application/json; charset=utf-8");
+				res.writeHead(422);
+				let o = {};
+				err.data.forEach(e => {
+					let field = e.field.split(".").pop();
+					o[field] = e.message;
+				});
+				return res.end(JSON.stringify({
+					errors: o
+				}, null, 2));
+				
+			}			
+			
+			return this._sendError(req, res, err);
+		}
+	},
+
+	created() {
+		// Pointer to the original function
+		this._sendError = ApiGateway.methods.sendError.bind(this);
 	}
+
+
 };

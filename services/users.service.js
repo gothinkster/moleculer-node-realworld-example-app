@@ -44,13 +44,16 @@ module.exports = {
 			},			
 			handler(ctx) {
 				let entity = ctx.params.user;
-				entity.password = bcrypt.hashSync(entity.password, 10);
-				entity.bio = entity.bio || "";
-				entity.image = entity.image || null;
-				entity.createdAt = new Date();
+				return this.validateEntity(entity)
+					.then(() => {
+						entity.password = bcrypt.hashSync(entity.password, 10);
+						entity.bio = entity.bio || "";
+						entity.image = entity.image || null;
+						entity.createdAt = new Date();
 
-				return this.create(ctx, entity, {})
-					.then(user => this.transformEntity(user, true));
+						return this.create(ctx, entity, {})
+							.then(user => this.transformEntity(user, true, ctx.meta.token));
+					});
 			}
 		},
 
@@ -61,7 +64,7 @@ module.exports = {
 			params: {
 				user: { type: "object", props: {
 					email: { type: "email" },
-					password: { type: "string" }
+					password: { type: "string", min: 1 }
 				}}
 			},
 			handler(ctx) {
@@ -71,17 +74,17 @@ module.exports = {
 					.then(() => this.findOne({ email }))
 					.then(user => {
 						if (!user)
-							return this.Promise.reject(new MoleculerClientError("Email or password is invalid!", 400));
+							return this.Promise.reject(new MoleculerClientError("Email or password is invalid!", 422, "", [{ field: "email", message: "is not found"}]));
 
 						return bcrypt.compare(password, user.password).then(res => {
 							if (!res)
-								return Promise.reject(new MoleculerClientError("Wrong password!", 400));
+								return Promise.reject(new MoleculerClientError("Wrong password!", 422, "", [{ field: "email", message: "is not found"}]));
 							
 							// Transform user entity (remove password and all protected fields)
 							return this.transformDocuments(ctx, {}, user);
 						});
 					})
-					.then(user => this.transformEntity(user, true));
+					.then(user => this.transformEntity(user, true, ctx.meta.token));
 			}
 		},
 
@@ -122,7 +125,7 @@ module.exports = {
 
 						return this.transformDocuments(ctx, {}, user);
 					})
-					.then(user => this.transformEntity(user, true));
+					.then(user => this.transformEntity(user, true, ctx.meta.token));
 			}
 		},
 
@@ -133,7 +136,7 @@ module.exports = {
 			auth: "required",
 			params: {
 				user: { type: "object", props: {
-					username: { type: "string", min: 2, optional: true },
+					username: { type: "string", min: 2, optional: true, pattern: /^[a-zA-Z0-9]+$/ },
 					password: { type: "string", min: 6, optional: true },
 					email: { type: "email", optional: true },
 					bio: { type: "string", optional: true },
@@ -142,14 +145,36 @@ module.exports = {
 			},
 			handler(ctx) {
 				const newData = ctx.params.user;
-				newData.updatedAt = new Date();
-				const update = {
-					"$set": newData
-				};
-				return this.updateById(ctx, {
-					id: ctx.meta.user._id,
-					update
-				}).then(user => this.transformEntity(user, true));
+				return this.Promise.resolve()
+					.then(() => {
+						if (newData.username)
+							return this.findOne({ username: newData.username })
+								.then(found => {
+									if (found && found._id !== ctx.meta.user._id)
+										return Promise.reject(new MoleculerClientError("Usernam is exist!", 422, "", [{ field: "username", message: "is exist"}]));
+									
+								});
+					})
+					.then(() => {
+						if (newData.email)
+							return this.findOne({ email: newData.email })
+								.then(found => {
+									if (found && found._id !== ctx.meta.user._id)
+										return Promise.reject(new MoleculerClientError("Email is exist!", 422, "", [{ field: "email", message: "is exist"}]));
+								});
+							
+					})
+					.then(() => {
+						newData.updatedAt = new Date();
+						const update = {
+							"$set": newData
+						};
+						return this.updateById(ctx, {
+							id: ctx.meta.user._id,
+							update
+						});
+					})
+					.then(user => this.transformEntity(user, true, ctx.meta.token));
 
 			}
 		},
@@ -165,7 +190,7 @@ module.exports = {
 				return this.findOne({ username: ctx.params.username })
 					.then(user => {
 						if (!user)
-							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
 
 						return this.transformDocuments(ctx, {}, user);
 					})
@@ -182,7 +207,7 @@ module.exports = {
 				return this.findOne({ username: ctx.params.username })
 					.then(user => {
 						if (!user)
-							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
 
 						return ctx.call("follows.add", { user: ctx.meta.user._id, follow: user._id })
 							.then(() => this.transformDocuments(ctx, {}, user));
@@ -200,7 +225,7 @@ module.exports = {
 				return this.findOne({ username: ctx.params.username })
 					.then(user => {
 						if (!user)
-							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
+							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
 
 						return ctx.call("follows.delete", { user: ctx.meta.user._id, follow: user._id })
 							.then(() => this.transformDocuments(ctx, {}, user));
@@ -250,10 +275,11 @@ module.exports = {
 		 * @param {Object} user 
 		 * @param {Boolean} withToken 
 		 */
-		transformEntity(user, withToken) {
+		transformEntity(user, withToken, token) {
 			if (user) {
+				user.image = user.image || "";
 				if (withToken)
-					user.token = this.generateJWT(user);
+					user.token = token || this.generateJWT(user);
 			}
 
 			return { user };

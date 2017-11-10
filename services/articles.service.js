@@ -33,10 +33,10 @@ module.exports = {
 			}
 		},
 		entityValidator: {
-			title: { type: "string" },
-			description: { type: "string", optional: true },
-			body: { type: "string", optional: true },
-			tagList: { type: "array", items: "string" },
+			title: { type: "string", min: 1 },
+			description: { type: "string", min: 1 },
+			body: { type: "string", min: 1 },
+			tagList: { type: "array", items: "string", optional: true },
 		}
 	},
 
@@ -51,14 +51,17 @@ module.exports = {
 			},
 			handler(ctx) {
 				let entity = ctx.params.article;
+				return this.validateEntity(entity)
+					.then(() => {
 
-				entity.slug = slug(entity.title, { lower: true }) + "-" + (Math.random() * Math.pow(36, 6) | 0).toString(36);
-				entity.author = ctx.meta.user._id;
-				entity.createdAt = new Date();
-				entity.updatedAt = new Date();
+						entity.slug = slug(entity.title, { lower: true }) + "-" + (Math.random() * Math.pow(36, 6) | 0).toString(36);
+						entity.author = ctx.meta.user._id;
+						entity.createdAt = new Date();
+						entity.updatedAt = new Date();
 
-				return this.create(ctx, entity, { populate: ["author"]})
-					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+						return this.create(ctx, entity, { populate: ["author"]})
+							.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+					});
 			}
 		},
 
@@ -66,7 +69,12 @@ module.exports = {
 			auth: "required",
 			params: {
 				id: { type: "string" },
-				article: { type: "object" }
+				article: { type: "object", props: {
+					title: { type: "string", min: 1, optional: true },
+					description: { type: "string", min: 1, optional: true },
+					body: { type: "string", min: 1, optional: true },
+					tagList: { type: "array", items: "string", optional: true },					
+				} }
 			},
 			handler(ctx) {
 				let newData = ctx.params.article;
@@ -76,7 +84,7 @@ module.exports = {
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
-							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
 						if (article.author !== ctx.meta.user._id)
 							return this.Promise.reject(new ForbiddenError());
@@ -206,7 +214,12 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.findOne({slug: ctx.params.id})
-					.then(docs => this.transformDocuments(ctx, { populate: ["author"] }, docs))
+					.then(entity => {
+						if (!entity)
+							return this.Promise.reject(new MoleculerClientError("Article not found!", 404));
+
+						return this.transformDocuments(ctx, { populate: ["author"] }, entity);
+					})
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},	
@@ -219,6 +232,9 @@ module.exports = {
 			handler(ctx) {
 				return this.findOne({slug: ctx.params.id})
 					.then(entity => {
+						if (!entity)
+							return this.Promise.reject(new MoleculerClientError("Article not found!", 404));
+
 						if (entity.author !== ctx.meta.user._id)
 							return this.Promise.reject(new ForbiddenError());
 
@@ -238,7 +254,7 @@ module.exports = {
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
-							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 							
 						return ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article);
 					})
@@ -256,7 +272,7 @@ module.exports = {
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
-							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
 						return ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article);
 					})
@@ -267,7 +283,7 @@ module.exports = {
 		tags: {
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => ctx.call("articles.find", { fields: ["tagList"]}))
+					.then(() => this.find(ctx, { fields: ["tagList"], sort: ["createdAt"] }))
 					.then(list => {
 						return _.uniq(_.compact(_.flattenDeep(list.map(o => o.tagList))));
 					})
@@ -284,7 +300,7 @@ module.exports = {
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
-							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
 						return ctx.call("comments.list", { article: article._id });
 					});
@@ -292,6 +308,7 @@ module.exports = {
 		},	
 
 		addComment: {
+			auth: "required",
 			params: {
 				slug: { type: "string" },
 				comment: { type: "object" }
@@ -301,7 +318,7 @@ module.exports = {
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
-							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
 						return ctx.call("comments.create", { article: article._id, comment: ctx.params.comment });
 					});
@@ -309,6 +326,7 @@ module.exports = {
 		},	
 
 		updateComment: {
+			auth: "required",
 			params: {
 				slug: { type: "string" },
 				commentID: { type: "string" },
@@ -319,7 +337,7 @@ module.exports = {
 					.then(slug => this.findOne({ slug }))
 					.then(article => {
 						if (!article)
-							return this.Promise.reject(new MoleculerClientError("Article not found"));
+							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
 						return ctx.call("comments.update", { id: ctx.params.commentID, comment: ctx.params.comment });
 					});
@@ -327,6 +345,7 @@ module.exports = {
 		},	
 
 		removeComment: {
+			auth: "required",
 			params: {
 				slug: { type: "string" },
 				commentID: { type: "string" }

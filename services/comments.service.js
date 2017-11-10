@@ -22,9 +22,8 @@ module.exports = {
 			}
 		},
 		entityValidator: {
-			author: { type: "string" },
 			article: { type: "string" },
-			body: { type: "string" },
+			body: { type: "string", min: 1 },
 		}
 	},
 
@@ -41,16 +40,20 @@ module.exports = {
 			},
 			handler(ctx) {
 				let entity = ctx.params.comment;
-
 				entity.article = ctx.params.article;
 				entity.author = ctx.meta.user._id;
-				entity.createdAt = new Date();
-				entity.updatedAt = new Date();
+				
+				return this.validateEntity(entity)
+					.then(() => {
 
-				// TODO: check that author is same as ctx.meta.user
+						entity.createdAt = new Date();
+						entity.updatedAt = new Date();
 
-				return this.create(ctx, entity, { populate: ["author"]})
-					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+						// TODO: check that author is same as ctx.meta.user
+
+						return this.create(ctx, entity, { populate: ["author"]})
+							.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+					});
 			}
 		},
 
@@ -58,7 +61,9 @@ module.exports = {
 			auth: "required",
 			params: {
 				id: { type: "string" },
-				comment: { type: "object" }
+				comment: { type: "object", props: {
+					body: { type: "string", min: 1 },
+				} }
 			},
 			handler(ctx) {
 				let newData = ctx.params.comment;
