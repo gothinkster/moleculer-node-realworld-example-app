@@ -1,8 +1,6 @@
 "use strict";
 
-const { MoleculerClientError } = require("moleculer").Errors;
-
-const _ = require("lodash");
+const { ForbiddenError } = require("moleculer-web").Errors;
 const DbService = require("moleculer-db");
 
 module.exports = {
@@ -66,16 +64,17 @@ module.exports = {
 				let newData = ctx.params.comment;
 				newData.updatedAt = new Date();
 				
-				// TODO: check that author is same as ctx.meta.user
-				
-				return this.Promise.resolve(ctx.params.id)
-					.then(id => {
+				return this.getById(ctx, { id: ctx.params.id })
+					.then(comment => {
+						if (comment.author !== ctx.meta.user._id)
+							return this.Promise.reject(new ForbiddenError());
+						
 						const update = {
 							"$set": newData
 						};
 
 						return this.updateById(ctx, {
-							id,
+							id: ctx.params.id,
 							update,
 							populate: ["author"]
 						});
@@ -121,13 +120,18 @@ module.exports = {
 		},
 
 		remove: {
+			auth: "required",
 			params: {
 				id: { type: "any" }
 			},
 			handler(ctx) {
-				// TODO: check that author is same as ctx.meta.user
-				
-				return this.removeById(ctx, { id: ctx.params.id });
+				return this.getById(ctx, { id: ctx.params.id })
+					.then(comment => {
+						if (comment.author !== ctx.meta.user._id)
+							return this.Promise.reject(new ForbiddenError());
+
+						return this.removeById(ctx, { id: ctx.params.id });
+					});	
 			}
 		}
 	},
