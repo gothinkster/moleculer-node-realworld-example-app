@@ -3,13 +3,13 @@
 > ### [Moleculer](http://moleculer.services/) codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
 This repo is functionality complete — PRs and issues welcome!
-For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
 
 **Live demo on Glitch: https://realworld-moleculer.glitch.me**
 
-Glitch: https://glitch.com/edit/#!/realworld-moleculer
+Glitch project: https://glitch.com/edit/#!/realworld-moleculer
 
 *[React + Redux](https://github.com/icebob/react-redux-realworld-example-app) front-end UI is included*
+For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
 
 ## Getting started
 
