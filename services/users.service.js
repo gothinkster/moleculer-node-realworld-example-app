@@ -104,7 +104,7 @@ module.exports = {
 				})
 					.then(decoded => {
 						if (decoded.id)
-							return this.getById(ctx, { id: decoded.id });
+							return this.getById(ctx, { id: decoded.id });								
 					});
 			}
 		},

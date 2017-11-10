@@ -49,6 +49,8 @@ module.exports = {
 				entity.createdAt = new Date();
 				entity.updatedAt = new Date();
 
+				// TODO: check that author is same as ctx.meta.user
+
 				return this.create(ctx, entity, { populate: ["author"]})
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
@@ -63,6 +65,8 @@ module.exports = {
 			handler(ctx) {
 				let newData = ctx.params.comment;
 				newData.updatedAt = new Date();
+				
+				// TODO: check that author is same as ctx.meta.user
 				
 				return this.Promise.resolve(ctx.params.id)
 					.then(id => {
@@ -121,6 +125,8 @@ module.exports = {
 				id: { type: "any" }
 			},
 			handler(ctx) {
+				// TODO: check that author is same as ctx.meta.user
+				
 				return this.removeById(ctx, { id: ctx.params.id });
 			}
 		}

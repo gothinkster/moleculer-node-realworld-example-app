@@ -96,6 +96,10 @@ module.exports = {
 									ctx.meta.user = _.pick(user, ["_id", "username", "email", "image"]);
 								}
 								return user;
+							})
+							.catch(err => {
+								// Ignored because we continue if user is not exist
+								return null;
 							});
 					}
 				})

@@ -1,6 +1,7 @@
 "use strict";
 
 const { MoleculerClientError } = require("moleculer").Errors;
+const { ForbiddenError } = require("moleculer-web").Errors;
 
 const _ = require("lodash");
 const slug = require("slug");
@@ -76,6 +77,9 @@ module.exports = {
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found"));
+
+						if (article.author !== ctx.meta.user._id)
+							return this.Promise.reject(new ForbiddenError());
 
 						const update = {
 							"$set": newData
@@ -208,12 +212,16 @@ module.exports = {
 		},	
 
 		remove: {
+			auth: "required",
 			params: {
 				id: { type: "any" }
 			},
 			handler(ctx) {
 				return this.findOne({slug: ctx.params.id})
 					.then(entity => {
+						if (entity.author !== ctx.meta.user._id)
+							return this.Promise.reject(new ForbiddenError());
+
 						return this.removeById(ctx, { id: entity._id })
 							.then(() => ctx.call("favorites.removeByArticle", { article: entity._id }));
 					});
