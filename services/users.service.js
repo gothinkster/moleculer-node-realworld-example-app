@@ -83,7 +83,7 @@ module.exports = {
 				const { email, password } = ctx.params.user;
 
 				return this.Promise.resolve()
-					.then(() => this.findOne({ email }))
+					.then(() => this.adapter.findOne({ email }))
 					.then(user => {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("Email or password is invalid!", 422, "", [{ field: "email", message: "is not found"}]));
@@ -176,7 +176,7 @@ module.exports = {
 				return this.Promise.resolve()
 					.then(() => {
 						if (newData.username)
-							return this.findOne({ username: newData.username })
+							return this.adapter.findOne({ username: newData.username })
 								.then(found => {
 									if (found && found._id !== ctx.meta.user._id)
 										return Promise.reject(new MoleculerClientError("Usernam is exist!", 422, "", [{ field: "username", message: "is exist"}]));
@@ -185,7 +185,7 @@ module.exports = {
 					})
 					.then(() => {
 						if (newData.email)
-							return this.findOne({ email: newData.email })
+							return this.adapter.findOne({ email: newData.email })
 								.then(found => {
 									if (found && found._id !== ctx.meta.user._id)
 										return Promise.reject(new MoleculerClientError("Email is exist!", 422, "", [{ field: "email", message: "is exist"}]));
@@ -219,7 +219,7 @@ module.exports = {
 				username: { type: "string" }
 			},
 			handler(ctx) {
-				return this.findOne({ username: ctx.params.username })
+				return this.adapter.findOne({ username: ctx.params.username })
 					.then(user => {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
@@ -245,7 +245,7 @@ module.exports = {
 				username: { type: "string" }
 			},
 			handler(ctx) {
-				return this.findOne({ username: ctx.params.username })
+				return this.adapter.findOne({ username: ctx.params.username })
 					.then(user => {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
@@ -272,7 +272,7 @@ module.exports = {
 				username: { type: "string" }
 			},
 			handler(ctx) {
-				return this.findOne({ username: ctx.params.username })
+				return this.adapter.findOne({ username: ctx.params.username })
 					.then(user => {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
@@ -304,19 +304,6 @@ module.exports = {
 				username: user.username,
 				exp: Math.floor(exp.getTime() / 1000)
 			}, this.settings.JWT_SECRET);
-		},
-
-		/**
-		 * Find the first result item
-		 * 
-		 * @param {*} query 
-		 */
-		findOne(query) {
-			return this.adapter.find({ query })
-				.then(res => {
-					if (res && res.length > 0)
-						return res[0];
-				});
 		},
 
 		/**

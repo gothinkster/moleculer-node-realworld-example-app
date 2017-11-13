@@ -147,7 +147,7 @@ module.exports = {
 		 * @param {String} user - User ID
 		 */
 		findByArticleAndUser(article, user) {
-			return this.findOne({ query: { article, user } });
+			return this.adapter.findOne({ article, user });
 		},
 	}
 };

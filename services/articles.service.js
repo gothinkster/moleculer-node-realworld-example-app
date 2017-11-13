@@ -38,7 +38,7 @@ module.exports = {
 					return this.Promise.all(articles.map(article => ctx.call("favorites.has", { article: article._id, user: ctx.meta.user._id }).then(res => article.favorited = res)));
 				else {
 					articles.forEach(article => article.favorited = false);
-					return this.Promiser.resolve();
+					return this.Promise.resolve();
 				}
 			},
 			favoritesCount(ids, articles, rule, ctx) {
@@ -540,7 +540,7 @@ module.exports = {
 		 * @results {Object} Promise<Article
 		 */
 		findBySlug(slug) {
-			return this.findOne({ query: { slug } });
+			return this.adapter.findOne({ slug });
 		},
 
 		/**

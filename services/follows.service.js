@@ -129,7 +129,7 @@ module.exports = {
 		 * @param {String} user - Follower username
 		 */
 		findByFollowAndUser(follow, user) {
-			return this.findOne({ query: { follow, user } });
+			return this.adapter.findOne({ follow, user });
 		},
 	}	
 };
