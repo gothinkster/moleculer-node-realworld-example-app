@@ -197,6 +197,7 @@ module.exports = {
 
 		/**
 		 * Transform the result entities to follow the RealWorld API spec
+		 * 
 		 * @param {Context} ctx 
 		 * @param {Array} entities 
 		 * @param {Object} user - Logged in user
@@ -213,6 +214,7 @@ module.exports = {
 
 		/**
 		 * Transform a result entity to follow the RealWorld API spec 
+		 * 
 		 * @param {Context} ctx 
 		 * @param {Object} entity 
 		 * @param {Object} user - Logged in user

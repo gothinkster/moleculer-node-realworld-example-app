@@ -8,5 +8,7 @@ mkdir(path.resolve("data"));
 
 module.exports = {
 	logger: true,
-	logLevel: "info"
+	logLevel: "info",
+
+	metrics: true
 };

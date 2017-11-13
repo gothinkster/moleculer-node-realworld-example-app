@@ -32,6 +32,16 @@ module.exports = {
 					fields: ["_id", "body", "author"],
 					populates: ["author"]
 				}
+			},
+			favorited(ids, articles, rule, ctx) {
+				if (ctx.meta.user)
+					return this.Promise.all(articles.map(article => ctx.call("favorites.has", { article: article._id, user: ctx.meta.user._id }).then(res => article.favorited = res)));
+				else {
+					articles.forEach(article => article.favorited = false);
+				}
+			},
+			favoritesCount(ids, articles, rule, ctx) {
+				return this.Promise.all(articles.map(article => ctx.call("favorites.count", { article: article._id }).then(count => article.favoritesCount = count)));
 			}
 		},
 
@@ -74,7 +84,7 @@ module.exports = {
 						entity.updatedAt = new Date();
 
 						return this.adapter.insert(entity)
-							.then(doc => this.transformDocuments(ctx, { populate: ["author"]}, doc))
+							.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"]}, doc))
 							.then(entity => this.transformResult(ctx, entity, ctx.meta.user))
 							.then(json => this.entityChanged("created", json, ctx).then(() => json));
 					});
@@ -121,7 +131,7 @@ module.exports = {
 
 						return this.adapter.updateById(article._id, update);
 					})
-					.then(doc => this.transformDocuments(ctx, { populate: ["author"]}, doc))
+					.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"]}, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user))
 					.then(json => this.entityChanged("updated", json, ctx).then(() => json));
 			}
@@ -155,7 +165,7 @@ module.exports = {
 					limit,
 					offset,
 					sort: ["-createdAt"],
-					populate: ["author"],
+					populate: ["author", "favorited", "favoritesCount"],
 					query: {}
 				};
 				let countParams;
@@ -240,7 +250,7 @@ module.exports = {
 					limit,
 					offset,
 					sort: ["-createdAt"],
-					populate: ["author"],
+					populate: ["author", "favorited", "favoritesCount"],
 					query: {}
 				};
 				let countParams;
@@ -299,7 +309,7 @@ module.exports = {
 
 						return entity;
 					})
-					.then(doc => this.transformDocuments(ctx, { populate: ["author"] }, doc))
+					.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},	
@@ -356,7 +366,7 @@ module.exports = {
 							
 						return ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article);
 					})
-					.then(doc => this.transformDocuments(ctx, { populate: ["author"] }, doc))
+					.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
@@ -384,7 +394,7 @@ module.exports = {
 
 						return ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article);
 					})
-					.then(doc => this.transformDocuments(ctx, { populate: ["author"] }, doc))
+					.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
@@ -523,6 +533,7 @@ module.exports = {
 	methods: {
 		/**
 		 * Find an article by slug
+		 * 
 		 * @param {String} slug - Article slug
 		 * 
 		 * @results {Object} Promise<Article
@@ -533,6 +544,7 @@ module.exports = {
 
 		/**
 		 * Transform the result entities to follow the RealWorld API spec
+		 * 
 		 * @param {Context} ctx 
 		 * @param {Array} entities 
 		 * @param {Object} user - Logged in user
@@ -549,6 +561,7 @@ module.exports = {
 
 		/**
 		 * Transform a result entity to follow the RealWorld API spec 
+		 * 
 		 * @param {Context} ctx 
 		 * @param {Object} entity 
 		 * @param {Object} user - Logged in user
@@ -556,8 +569,8 @@ module.exports = {
 		transformEntity(ctx, entity, user) {
 			if (!entity) return this.Promise.resolve();
 
-			return this.Promise.resolve(entity)
-				.then(entity => {
+			return this.Promise.resolve(entity);
+				/*.then(entity => {
 					if (user) {
 						return ctx.call("favorites.has", { article: entity._id, user: user._id })
 							.then(favorited => {
@@ -575,8 +588,7 @@ module.exports = {
 							entity.favoritesCount = favoritesCount;
 							return entity;
 						});
-				});
-
+				});*/
 		}
 	}
 };
