@@ -19,6 +19,16 @@ module.exports = {
 	 * Actions
 	 */
 	actions: {
+
+		/**
+		 * Create a new favorite record
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} article - Article ID
+		 * @param {String} user - User ID
+		 * @returns {Object} Created favorite record
+		 */		
 		add: {
 			params: {
 				article: { type: "string" },
@@ -36,6 +46,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Check the given 'article' is followed by 'user'.
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} article - Article ID
+		 * @param {String} user - User ID
+		 * @returns {Boolean}
+		 */		
 		has: {
 			params: {
 				article: { type: "string" },
@@ -48,6 +67,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Count of favorites.
+		 * 
+		 * @actions
+		 * 
+		 * @param {String?} article - Article ID
+		 * @param {String?} user - User ID
+		 * @returns {Number}
+		 */		
 		count: {
 			params: {
 				article: { type: "string", optional: true },
@@ -65,6 +93,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Delete a favorite record
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} article - Article ID
+		 * @param {String} user - User ID
+		 * @returns {Number} Count of removed records
+		 */		
 		delete: {
 			params: {
 				article: { type: "string" },
@@ -82,6 +119,14 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Remove all favorites by article
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} article - Article ID
+		 * @returns {Number} Count of removed records
+		 */		
 		removeByArticle: {
 			params: {
 				article: { type: "string" }
@@ -96,6 +141,11 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
+		/**
+		 * Find the first favorite record by 'article' or 'user' 
+		 * @param {String} article - Article ID
+		 * @param {String} user - User ID
+		 */
 		findByArticleAndUser(article, user) {
 			return this.findOne({ query: { article, user } });
 		},

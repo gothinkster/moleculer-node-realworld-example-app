@@ -19,6 +19,16 @@ module.exports = {
 	 * Actions
 	 */
 	actions: {
+
+		/**
+		 * Create a new following record
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} user - Follower username
+		 * @param {String} follow - Followee username
+		 * @returns {Object} Created following record
+		 */
 		add: {
 			params: {
 				user: { type: "string" },
@@ -36,6 +46,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Check the given 'follow' user is followed by 'user' user.
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} user - Follower username
+		 * @param {String} follow - Followee username
+		 * @returns {Boolean} 
+		 */
 		has: {
 			params: {
 				user: { type: "string" },
@@ -47,6 +66,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Count of following.
+		 * 
+		 * @actions
+		 * 
+		 * @param {String?} user - Follower username
+		 * @param {String?} follow - Followee username
+		 * @returns {Number}
+		 */
 		count: {
 			params: {
 				follow: { type: "string", optional: true },
@@ -64,6 +92,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Delete a following record
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} user - Follower username
+		 * @param {String} follow - Followee username
+		 * @returns {Number} Count of removed records
+		 */
 		delete: {
 			params: {
 				user: { type: "string" },
@@ -86,6 +123,11 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
+		/**
+		 * Find the first following record by 'follow' or 'user' 
+		 * @param {String} follow - Followee username
+		 * @param {String} user - Follower username
+		 */
 		findByFollowAndUser(follow, user) {
 			return this.findOne({ query: { follow, user } });
 		},

@@ -37,6 +37,11 @@ module.exports = {
 	actions: {
 		/**
 		 * Register a new user
+		 * 
+		 * @actions
+		 * @param {Object} user - User entity
+		 * 
+		 * @returns {Object} Created entity & token
 		 */
 		create: {
 			params: {
@@ -61,6 +66,11 @@ module.exports = {
 
 		/**
 		 * Login with username & password
+		 * 
+		 * @actions
+		 * @param {Object} user - User credentials
+		 * 
+		 * @returns {Object} Logged in user with token
 		 */
 		login: {
 			params: {
@@ -92,6 +102,11 @@ module.exports = {
 
 		/**
 		 * Get user by JWT token (for API GW authentication)
+		 * 
+		 * @actions
+		 * @param {String} token - JWT token
+		 * 
+		 * @returns {Object} Resolved user
 		 */
 		resolveToken: {
 			params: {
@@ -115,7 +130,12 @@ module.exports = {
 		},
 
 		/**
-		 * Get current user entity
+		 * Get current user entity.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * 
+		 * @returns {Object} User entity
 		 */
 		me: {
 			auth: "required",
@@ -132,7 +152,13 @@ module.exports = {
 		},
 
 		/**
-		 * Update current user entity
+		 * Update current user entity.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * 
+		 * @param {Object} user - Modified fields
+		 * @returns {Object} User entity
 		 */
 		updateMyself: {
 			auth: "required",
@@ -181,7 +207,12 @@ module.exports = {
 		},
 
 		/**
-		 * Get current user entity
+		 * Get a user profile.
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} username - Username
+		 * @returns {Object} User entity
 		 */
 		profile: {
 			params: {
@@ -199,6 +230,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Follow a user
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} username - Followed username
+		 * @returns {Object} Current user entity
+		 */
 		follow: {
 			auth: "required",
 			params: {
@@ -217,6 +257,15 @@ module.exports = {
 			}
 		},	
 
+		/**
+		 * Unfollow a user
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * 
+		 * @param {String} username - Unfollowed username
+		 * @returns {Object} Current user entity
+		 */
 		unfollow: {
 			auth: "required",
 			params: {

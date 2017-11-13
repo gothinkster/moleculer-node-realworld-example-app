@@ -31,7 +31,16 @@ module.exports = {
 	 * Actions
 	 */
 	actions: {
-
+		/**
+		 * Create a comment.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} article - Article ID
+		 * @param {Object} comment - Comment entity
+		 * 
+		 * @returns {Object} Created comment entity
+		 */
 		create: {
 			auth: "required",
 			params: {
@@ -57,6 +66,16 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Update a comment.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} id - Comment ID
+		 * @param {Object} comment - Comment modified fields
+		 * 
+		 * @returns {Object} Updated comment entity
+		 */
 		update: {
 			auth: "required",
 			params: {
@@ -86,6 +105,16 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * List of comments by article.
+		 * 
+		 * @actions
+		 * @param {String} article - Article ID
+		 * @param {Number} limit - Pagination limit
+		 * @param {Number} offset - Pagination offset
+		 * 
+		 * @returns {Object} List of comments
+		 */
 		list: {
 			params: {
 				article: { type: "string" },
@@ -135,6 +164,15 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Remove a comment
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} id - Comment ID
+		 * 
+		 * @returns {Number} Count of removed comments
+		 */
 		remove: {
 			auth: "required",
 			params: {
@@ -157,6 +195,12 @@ module.exports = {
 	 */
 	methods: {
 
+		/**
+		 * Transform the result entities to follow the RealWorld API spec
+		 * @param {Context} ctx 
+		 * @param {Array} entities 
+		 * @param {Object} user - Logged in user
+		 */
 		transformResult(ctx, entities, user) {
 			if (Array.isArray(entities)) {
 				return this.Promise.map(entities, item => this.transformEntity(ctx, item, user))
@@ -167,6 +211,12 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Transform a result entity to follow the RealWorld API spec 
+		 * @param {Context} ctx 
+		 * @param {Object} entity 
+		 * @param {Object} user - Logged in user
+		 */
 		transformEntity(ctx, entity, loggedInUser) {
 			if (!entity) return this.Promise.resolve();
 
