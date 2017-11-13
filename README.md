@@ -34,7 +34,7 @@ TODO
 
 - [moleculer](https://github.com/ice-services/moleculer) - Microservices framework for NodeJS
 - [moleculer-web](https://github.com/ice-services/moleculer-web) - Official API Gateway service for Moleculer
-- [moleculer-db](https://github.com/ice-services/moleculer-addons/tree/master/packages/moleculer-db#readme) - Database store service for Moleculer
+- [moleculer-db](https://github.com/ice-services/moleculer-db/tree/master/packages/moleculer-db#readme) - Database store service for Moleculer
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) - For generating JWTs used by authentication
 - [bcrypt](https://github.com/kelektiv/node.bcrypt.js) - Hashing user password
 - [lodash](https://github.com/lodash/lodash) - Utility library

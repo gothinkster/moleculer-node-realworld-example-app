@@ -49,10 +49,13 @@ module.exports = {
 				"DELETE /profiles/:username/follow": "users.unfollow",
 			},
 
+			// Disable to call not-mapped actions
 			mappingPolicy: "restrict",
 
+			// Set CORS headers
 			cors: true,
 
+			// Parse body content
 			bodyParsers: {
 				json: {
 					strict: false
