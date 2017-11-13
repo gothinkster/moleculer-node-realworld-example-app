@@ -17,14 +17,16 @@ module.exports = {
 	 */
 	settings: {
 		fields: ["_id", "title", "slug", "description", "body", "tagList", "createdAt", "updatedAt", "favoritesCount", "author", "comments"],
+
+		// Populates
 		populates: {
-			"author": {
+			author: {
 				action: "users.get",
 				params: {
 					fields: ["username", "bio", "image"]
 				}
 			},
-			"comments": {
+			comments: {
 				action: "comments.get",
 				params: {
 					fields: ["_id", "body", "author"],
@@ -32,6 +34,8 @@ module.exports = {
 				}
 			}
 		},
+
+		// Validation schema for new entities
 		entityValidator: {
 			title: { type: "string", min: 1 },
 			description: { type: "string", min: 1 },
@@ -44,6 +48,16 @@ module.exports = {
 	 * Actions
 	 */
 	actions: {
+
+		/**
+		 * Create a new article.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {Object} article - Article entity
+		 * 
+		 * @returns {Object} Created entity
+		 */
 		create: {
 			auth: "required",
 			params: {
@@ -59,12 +73,24 @@ module.exports = {
 						entity.createdAt = new Date();
 						entity.updatedAt = new Date();
 
-						return this.create(ctx, entity, { populate: ["author"]})
-							.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+						return this.adapter.insert(entity)
+							.then(doc => this.transformDocuments(ctx, { populate: ["author"]}, doc))
+							.then(entity => this.transformResult(ctx, entity, ctx.meta.user))
+							.then(json => this.entityChanged("created", json, ctx).then(() => json));
 					});
 			}
 		},
 
+		/**
+		 * Update an article.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} id - Article ID
+		 * @param {Object} article - Article modified fields
+		 * 
+		 * @returns {Object} Updated entity
+		 */
 		update: {
 			auth: "required",
 			params: {
@@ -81,7 +107,7 @@ module.exports = {
 				newData.updatedAt = new Date();
 				// the 'id' is the slug
 				return this.Promise.resolve(ctx.params.id)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
@@ -93,15 +119,26 @@ module.exports = {
 							"$set": newData
 						};
 
-						return this.updateById(ctx, {
-							id: article._id,
-							update
-						});
+						return this.adapter.updateById(article._id, update);
 					})
-					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+					.then(doc => this.transformDocuments(ctx, { populate: ["author"]}, doc))
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user))
+					.then(json => this.entityChanged("updated", json, ctx).then(() => json));
 			}
 		},
 
+		/**
+		 * List articles with pagination.
+		 * 
+		 * @actions
+		 * @param {String} tag - Filter for 'tag'
+		 * @param {String} author - Filter for author ID
+		 * @param {String} favorited - Filter for favorited author
+		 * @param {Number} limit - Pagination limit
+		 * @param {Number} offset - Pagination offset
+		 * 
+		 * @returns {Object} List of articles
+		 */
 		list: {
 			params: {
 				tag: { type: "string", optional: true },
@@ -121,6 +158,7 @@ module.exports = {
 					populate: ["author"],
 					query: {}
 				};
+				let countParams;
 
 				if (ctx.params.tag)
 					params.query.tagList = {"$in" : [ctx.params.tag]};
@@ -152,21 +190,42 @@ module.exports = {
 								});
 						}
 					})
+					.then(() => {
+						countParams = Object.assign({}, params);
+						// Remove pagination params
+						if (countParams && countParams.limit)
+							countParams.limit = null;
+						if (countParams && countParams.offset)
+							countParams.offset = null;						
+					})
 					.then(() => this.Promise.all([
 						// Get rows
-						this.find(ctx, params),
+						this.adapter.find(params),
 
 						// Get count of all rows
-						this.count(ctx, params)
+						this.adapter.count(countParams)
 
-					])).then(res => this.transformResult(ctx, res[0], ctx.meta.user)
-						.then(r => {
-							r.articlesCount = res[1];
-							return r;
-						}));
+					])).then(res => {
+						return this.transformDocuments(ctx, params, res[0])
+							.then(docs => this.transformResult(ctx, docs, ctx.meta.user))
+							.then(r => {
+								r.articlesCount = res[1];
+								return r;
+							});
+					});
 			}
 		},
 
+		/**
+		 * List articles from followed authors.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {Number} limit - Pagination limit
+		 * @param {Number} offset - Pagination offset
+		 * 
+		 * @returns {Object} List of articles
+		 */
 		feed: {
 			auth: "required",
 			params: {
@@ -184,6 +243,7 @@ module.exports = {
 					populate: ["author"],
 					query: {}
 				};
+				let countParams;
 
 				return this.Promise.resolve()
 					.then(() => {
@@ -193,44 +253,73 @@ module.exports = {
 								params.query.author = {"$in" : authors};
 							});						
 					})
+					.then(() => {
+						countParams = Object.assign({}, params);
+						// Remove pagination params
+						if (countParams && countParams.limit)
+							countParams.limit = null;
+						if (countParams && countParams.offset)
+							countParams.offset = null;						
+					})
 					.then(() => this.Promise.all([
 						// Get rows
-						this.find(ctx, params),
+						this.adapter.find(params),
 
 						// Get count of all rows
-						this.count(ctx, params)
+						this.adapter.count(countParams)
 
-					])).then(res => this.transformResult(ctx, res[0], ctx.meta.user)
-						.then(r => {
-							r.articlesCount = res[1];
-							return r;
-						}));
+					])).then(res => {
+						return this.transformDocuments(ctx, params, res[0])
+							.then(docs => this.transformResult(ctx, docs, ctx.meta.user))
+							.then(r => {
+								r.articlesCount = res[1];
+								return r;
+							});
+					});
 			}
 		},
 
+		/**
+		 * Get an article by slug
+		 * 
+		 * @actions
+		 * @param {String} id - Article slug
+		 * 
+		 * @returns {Object} Article entity
+		 */
 		get: {
 			params: {
 				id: { type: "string" }
 			},
 			handler(ctx) {
-				return this.findOne({slug: ctx.params.id})
+				return this.findBySlug(ctx.params.id)
 					.then(entity => {
 						if (!entity)
 							return this.Promise.reject(new MoleculerClientError("Article not found!", 404));
 
-						return this.transformDocuments(ctx, { populate: ["author"] }, entity);
+						return entity;
 					})
+					.then(doc => this.transformDocuments(ctx, { populate: ["author"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},	
 
+		/**
+		 * Remove an article by slug
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} id - Article slug
+		 * 
+		 * @returns {Number} Count of removed articles
+		 */
 		remove: {
 			auth: "required",
 			params: {
 				id: { type: "any" }
 			},
 			handler(ctx) {
-				return this.findOne({slug: ctx.params.id})
+				return this.findBySlug(ctx.params.id)
 					.then(entity => {
 						if (!entity)
 							return this.Promise.reject(new MoleculerClientError("Article not found!", 404));
@@ -238,12 +327,21 @@ module.exports = {
 						if (entity.author !== ctx.meta.user._id)
 							return this.Promise.reject(new ForbiddenError());
 
-						return this.removeById(ctx, { id: entity._id })
+						return this.adapter.removeById(entity._id)
 							.then(() => ctx.call("favorites.removeByArticle", { article: entity._id }));
 					});
 			}
 		},
 
+		/**
+		 * Favorite an article
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} id - Article slug
+		 * 
+		 * @returns {Object} Updated article
+		 */
 		favorite: {
 			auth: "required",
 			params: {
@@ -251,17 +349,27 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve(ctx.params.slug)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 							
 						return ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article);
 					})
+					.then(doc => this.transformDocuments(ctx, { populate: ["author"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
 
+		/**
+		 * Unfavorite an article
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} id - Article slug
+		 * 
+		 * @returns {Object} Updated article
+		 */
 		unfavorite: {
 			auth: "required",
 			params: {
@@ -269,21 +377,27 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve(ctx.params.slug)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
 						return ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article);
 					})
+					.then(doc => this.transformDocuments(ctx, { populate: ["author"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
 			}
 		},
 
+		/**
+		 * Get list of available tags
+		 * 
+		 * @returns {Object} Tag list
+		 */
 		tags: {
 			handler(ctx) {
 				return this.Promise.resolve()
-					.then(() => this.find(ctx, { fields: ["tagList"], sort: ["createdAt"] }))
+					.then(() => this.adapter.find({ fields: ["tagList"], sort: ["createdAt"] }))
 					.then(list => {
 						return _.uniq(_.compact(_.flattenDeep(list.map(o => o.tagList))));
 					})
@@ -291,13 +405,22 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Get all comments of an article.
+		 * 
+		 * @actions
+		 * @param {String} slug - Article slug
+		 * 
+		 * @returns {Object} Comment list
+		 * 
+		 */
 		comments: {
 			params: {
 				slug: { type: "string" }
 			},
 			handler(ctx) {
 				return this.Promise.resolve(ctx.params.slug)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
@@ -307,6 +430,16 @@ module.exports = {
 			}
 		},	
 
+		/**
+		 * Add a new comment to an article.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} slug - Article slug
+		 * @param {Object} comment - Comment fields
+		 * 
+		 * @returns {Object} Comment entity
+		 */
 		addComment: {
 			auth: "required",
 			params: {
@@ -315,7 +448,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve(ctx.params.slug)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
@@ -325,6 +458,17 @@ module.exports = {
 			}
 		},	
 
+		/**
+		 * Update a comment.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} slug - Article slug
+		 * @param {String} commentID - Comment ID
+		 * @param {Object} comment - Comment fields
+		 * 
+		 * @returns {Object} Comment entity
+		 */
 		updateComment: {
 			auth: "required",
 			params: {
@@ -334,7 +478,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve(ctx.params.slug)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
@@ -344,6 +488,16 @@ module.exports = {
 			}
 		},	
 
+		/**
+		 * Remove a comment.
+		 * Auth is required!
+		 * 
+		 * @actions
+		 * @param {String} slug - Article slug
+		 * @param {String} commentID - Comment ID
+		 * 
+		 * @returns {Number} Count of removed comment
+		 */
 		removeComment: {
 			auth: "required",
 			params: {
@@ -352,7 +506,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				return this.Promise.resolve(ctx.params.slug)
-					.then(slug => this.findOne({ slug }))
+					.then(slug => this.findBySlug(slug))
 					.then(article => {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found"));
@@ -367,14 +521,22 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
-		findOne(query) {
-			return this.adapter.find({ query })
-				.then(res => {
-					if (res && res.length > 0)
-						return res[0];
-				});
+		/**
+		 * Find an article by slug
+		 * @param {String} slug - Article slug
+		 * 
+		 * @results {Object} Promise<Article
+		 */
+		findBySlug(slug) {
+			return this.findOne({ query: { slug } });
 		},
 
+		/**
+		 * Transform the result entities to follow the RealWorld API spec
+		 * @param {Context} ctx 
+		 * @param {Array} entities 
+		 * @param {Object} user - Logged in user
+		 */
 		transformResult(ctx, entities, user) {
 			if (Array.isArray(entities)) {
 				return this.Promise.map(entities, item => this.transformEntity(ctx, item, user))
@@ -385,6 +547,12 @@ module.exports = {
 			}
 		},
 
+		/**
+		 * Transform a result entity to follow the RealWorld API spec 
+		 * @param {Context} ctx 
+		 * @param {Object} entity 
+		 * @param {Object} user - Logged in user
+		 */
 		transformEntity(ctx, entity, user) {
 			if (!entity) return this.Promise.resolve();
 

@@ -49,10 +49,10 @@ module.exports = {
 						entity.createdAt = new Date();
 						entity.updatedAt = new Date();
 
-						// TODO: check that author is same as ctx.meta.user
-
-						return this.create(ctx, entity, { populate: ["author"]})
-							.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+						return this.adapter.insert(entity)
+							.then(doc => this.transformDocuments(ctx, { populate: ["author"]}, doc))
+							.then(entity => this.transformResult(ctx, entity, ctx.meta.user))
+							.then(json => this.entityChanged("created", json, ctx).then(() => json));
 					});
 			}
 		},
@@ -69,7 +69,7 @@ module.exports = {
 				let newData = ctx.params.comment;
 				newData.updatedAt = new Date();
 				
-				return this.getById(ctx, { id: ctx.params.id })
+				return this.getById(ctx.params.id)
 					.then(comment => {
 						if (comment.author !== ctx.meta.user._id)
 							return this.Promise.reject(new ForbiddenError());
@@ -78,13 +78,11 @@ module.exports = {
 							"$set": newData
 						};
 
-						return this.updateById(ctx, {
-							id: ctx.params.id,
-							update,
-							populate: ["author"]
-						});
+						return this.adapter.updateById(ctx.params.id, update);
 					})
-					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
+					.then(doc => this.transformDocuments(ctx, { populate: ["author"]}, doc))
+					.then(entity => this.transformResult(ctx, entity, ctx.meta.user))
+					.then(json => this.entityChanged("updated", json, ctx).then(() => json));
 			}
 		},
 
@@ -107,20 +105,33 @@ module.exports = {
 						article: ctx.params.article
 					}
 				};
+				let countParams;
 
 				return this.Promise.resolve()
+					.then(() => {
+						countParams = Object.assign({}, params);
+						// Remove pagination params
+						if (countParams && countParams.limit)
+							countParams.limit = null;
+						if (countParams && countParams.offset)
+							countParams.offset = null;						
+					})				
 					.then(() => this.Promise.all([
 						// Get rows
-						this.find(ctx, params),
+						this.adapter.find(params),
 
 						// Get count of all rows
-						this.count(ctx, params)
+						this.adapter.count(countParams)
 
-					])).then(res => this.transformResult(ctx, res[0], ctx.meta.user)
-						.then(r => {
-							r.commentsCount = res[1];
-							return r;
-						}));
+					])).then(res => {
+						return this.transformDocuments(ctx, params, res[0])
+							.then(docs => this.transformResult(ctx, docs, ctx.meta.user))
+							.then(r => {
+								r.commentsCount = res[1];
+								return r;
+							});
+					});
+
 			}
 		},
 
@@ -130,12 +141,12 @@ module.exports = {
 				id: { type: "any" }
 			},
 			handler(ctx) {
-				return this.getById(ctx, { id: ctx.params.id })
+				return this.getById(ctx.params.id)
 					.then(comment => {
 						if (comment.author !== ctx.meta.user._id)
 							return this.Promise.reject(new ForbiddenError());
 
-						return this.removeById(ctx, { id: ctx.params.id });
+						return this.adapter.removeById(ctx.params.id);
 					});	
 			}
 		}
@@ -145,14 +156,6 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
-
-		findOne(query) {
-			return this.adapter.find({ query })
-				.then(res => {
-					if (res && res.length > 0)
-						return res[0];
-				});
-		},
 
 		transformResult(ctx, entities, user) {
 			if (Array.isArray(entities)) {

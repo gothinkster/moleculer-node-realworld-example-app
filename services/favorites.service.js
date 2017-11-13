@@ -26,12 +26,12 @@ module.exports = {
 			},
 			handler(ctx) {
 				const { article, user } = ctx.params;
-				return this.findOne({ article, user })
+				return this.findByArticleAndUser(article, user)
 					.then(item => {
 						if (item)
 							return this.Promise.reject(new MoleculerClientError("Articles has already favorited"));
 
-						return this.create(ctx, { article, user, createdAt: new Date() }, {});
+						return this.adapter.insert({ article, user, createdAt: new Date() });
 					});
 			}
 		},
@@ -43,7 +43,7 @@ module.exports = {
 			},
 			handler(ctx) {
 				const { article, user } = ctx.params;
-				return this.findOne({ article, user })
+				return this.findByArticleAndUser(article, user)
 					.then(item => !!item);
 			}
 		},
@@ -61,7 +61,7 @@ module.exports = {
 				if (ctx.params.user) 
 					query = { user: ctx.params.user };
 
-				return this.count(ctx, { query });
+				return this.adapter.count({ query });
 			}
 		},
 
@@ -72,12 +72,12 @@ module.exports = {
 			},
 			handler(ctx) {
 				const { article, user } = ctx.params;
-				return this.findOne({ article, user })
+				return this.findByArticleAndUser(article, user)
 					.then(item => {
 						if (!item)
 							return this.Promise.reject(new MoleculerClientError("Articles has not favorited yet"));
 
-						return this.removeById(ctx, { id: item._id }, {});
+						return this.adapter.removeById(item._id);
 					});
 			}
 		},
@@ -87,7 +87,7 @@ module.exports = {
 				article: { type: "string" }
 			},
 			handler(ctx) {
-				return this.removeMany(ctx, { query: ctx.params });
+				return this.adapter.removeMany(ctx.params);
 			}
 		}
 	},
@@ -96,12 +96,8 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
-		findOne(query) {
-			return this.adapter.find({ query })
-				.then(res => {
-					if (res && res.length > 0)
-						return res[0];
-				});
+		findByArticleAndUser(article, user) {
+			return this.findOne({ query: { article, user } });
 		},
 	}
 };

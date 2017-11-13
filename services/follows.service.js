@@ -26,12 +26,12 @@ module.exports = {
 			},
 			handler(ctx) {
 				const { follow, user } = ctx.params;
-				return this.findOne({ follow, user })
+				return this.findByFollowAndUser(follow, user)
 					.then(item => {
 						if (item)
 							return this.Promise.reject(new MoleculerClientError("User has already followed"));
 
-						return this.create(ctx, { follow, user, createdAt: new Date() }, {});
+						return this.adapter.insert({ follow, user, createdAt: new Date() });
 					});
 			}
 		},
@@ -42,8 +42,7 @@ module.exports = {
 				follow: { type: "string" },
 			},
 			handler(ctx) {
-				const { follow, user } = ctx.params;
-				return this.findOne({ follow, user })
+				return this.findByFollowAndUser(ctx.params.follow, ctx.params.user)
 					.then(item => !!item);
 			}
 		},
@@ -61,7 +60,7 @@ module.exports = {
 				if (ctx.params.user) 
 					query = { user: ctx.params.user };
 
-				return this.count(ctx, { query });
+				return this.adapter.count({ query });
 			}
 		},
 
@@ -72,12 +71,12 @@ module.exports = {
 			},
 			handler(ctx) {
 				const { follow, user } = ctx.params;
-				return this.findOne({ follow, user })
+				return this.findByFollowAndUser(follow, user)
 					.then(item => {
 						if (!item)
 							return this.Promise.reject(new MoleculerClientError("User has not followed yet"));
 
-						return this.removeById(ctx, { id: item._id }, {});
+						return this.adapter.removeById(item._id);
 					});
 			}
 		}
@@ -87,12 +86,8 @@ module.exports = {
 	 * Methods
 	 */
 	methods: {
-		findOne(query) {
-			return this.adapter.find({ query })
-				.then(res => {
-					if (res && res.length > 0)
-						return res[0];
-				});
+		findByFollowAndUser(follow, user) {
+			return this.findOne({ query: { follow, user } });
 		},
 	}	
 };

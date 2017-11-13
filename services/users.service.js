@@ -51,8 +51,10 @@ module.exports = {
 						entity.image = entity.image || null;
 						entity.createdAt = new Date();
 
-						return this.create(ctx, entity, {})
-							.then(user => this.transformEntity(user, true, ctx.meta.token));
+						return this.adapter.insert(entity)
+							.then(doc => this.transformDocuments(ctx, {}, doc))
+							.then(user => this.transformEntity(user, true, ctx.meta.token))
+							.then(json => this.entityChanged("created", json, ctx).then(() => json));					
 					});
 			}
 		},
@@ -107,7 +109,7 @@ module.exports = {
 				})
 					.then(decoded => {
 						if (decoded.id)
-							return this.getById(ctx, { id: decoded.id });								
+							return this.getById(decoded.id);
 					});
 			}
 		},
@@ -118,7 +120,7 @@ module.exports = {
 		me: {
 			auth: "required",
 			handler(ctx) {
-				return this.getById(ctx, { id: ctx.meta.user._id })
+				return this.getById(ctx.meta.user._id)
 					.then(user => {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("User not found!", 400));
@@ -169,12 +171,11 @@ module.exports = {
 						const update = {
 							"$set": newData
 						};
-						return this.updateById(ctx, {
-							id: ctx.meta.user._id,
-							update
-						});
+						return this.adapter.updateById(ctx.meta.user._id, update);
 					})
-					.then(user => this.transformEntity(user, true, ctx.meta.token));
+					.then(doc => this.transformDocuments(ctx, {}, doc))
+					.then(user => this.transformEntity(user, true, ctx.meta.token))
+					.then(json => this.entityChanged("updated", json, ctx).then(() => json));
 
 			}
 		},
