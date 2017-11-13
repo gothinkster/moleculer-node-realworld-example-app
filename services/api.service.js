@@ -8,7 +8,6 @@ module.exports = {
 	name: "api",
 	mixins: [ApiGateway],
 
-	// More info about settings: http://moleculer.services/docs/moleculer-web.html
 	settings: {
 		port: process.env.PORT || 3000,
 
@@ -70,8 +69,8 @@ module.exports = {
 			folder: "./public"
 		},
 
-		logRequestParams: "info",
-		logResponseData: "info",
+		// logRequestParams: "info",
+		// logResponseData: "info",
 
 	},
 
@@ -100,14 +99,14 @@ module.exports = {
 							.then(user => {
 								if (user) {
 									this.logger.info("Authenticated via JWT: ", user.username);
-									// Reduce user fields (it would be transferred to other nodes)
+									// Reduce user fields (it will be transferred to other nodes)
 									ctx.meta.user = _.pick(user, ["_id", "username", "email", "image"]);
 									ctx.meta.token = token;
 								}
 								return user;
 							})
 							.catch(err => {
-								// Ignored because we continue if user is not exist
+								// Ignored because we continue processing if user is not exist
 								return null;
 							});
 					}
@@ -118,6 +117,12 @@ module.exports = {
 				});
 		},
 
+		/**
+		 * Convert ValidationError to RealWorld.io result
+		 * @param {*} req 
+		 * @param {*} res 
+		 * @param {*} err 
+		 */
 		sendError(req, res, err) {
 			if (err.code == 422) {
 				res.setHeader("Content-type", "application/json; charset=utf-8");
