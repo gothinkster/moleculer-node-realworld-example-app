@@ -16,7 +16,7 @@ module.exports = {
 	 * Default settings
 	 */
 	settings: {
-		fields: ["_id", "title", "slug", "description", "body", "tagList", "createdAt", "updatedAt", "favoritesCount", "author", "comments"],
+		fields: ["_id", "title", "slug", "description", "body", "tagList", "createdAt", "updatedAt", "favorited", "favoritesCount", "author", "comments"],
 
 		// Populates
 		populates: {
@@ -38,6 +38,7 @@ module.exports = {
 					return this.Promise.all(articles.map(article => ctx.call("favorites.has", { article: article._id, user: ctx.meta.user._id }).then(res => article.favorited = res)));
 				else {
 					articles.forEach(article => article.favorited = false);
+					return this.Promiser.resolve();
 				}
 			},
 			favoritesCount(ids, articles, rule, ctx) {
