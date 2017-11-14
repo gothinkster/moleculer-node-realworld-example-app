@@ -3,6 +3,8 @@ version: "3.0"
 services:
 
   api:
+    build:
+      context: .
     image: conduit
     environment:
       SERVICEDIR: services
@@ -22,6 +24,8 @@ services:
       replicas: 2
 
   articles:
+    build:
+      context: .
     image: conduit
     environment:
       SERVICEDIR: services
@@ -36,6 +40,8 @@ services:
       replicas: 2
 
   comments:
+    build:
+      context: .
     image: conduit
     environment:
       SERVICEDIR: services
@@ -50,6 +56,8 @@ services:
       replicas: 2
 
   favorites:
+    build:
+      context: .
     image: conduit
     environment:
       SERVICEDIR: services
@@ -64,6 +72,8 @@ services:
       replicas: 2
 
   follows:
+    build:
+      context: .
     image: conduit
     environment:
       SERVICEDIR: services
@@ -78,6 +88,8 @@ services:
       replicas: 2
 
   users:
+    build:
+      context: .
     image: conduit
     environment:
       SERVICEDIR: services

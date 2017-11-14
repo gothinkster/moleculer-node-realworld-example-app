@@ -36,9 +36,13 @@ You can run multiple instances of services. In this case you need to use a trans
 TRANSPORTER=nats://localhost:4222
 ```
 
-
 ### To get the Node server running locally with Docker
-TODO
+
+1. Checkout the repo `git clone https://github.com/ice-services/moleculer-realworld-example-app.git`
+2. `cd moleculer-realworld-example-app`
+3. Start with docker-compose: `docker compose up -d`
+	It starts 2 instances of all services in separated containers, a NATS server for communication and a [Traefik](https://traefik.io/) reverse proxy
+4. Open the http://docker-ip:3000
 
 ## Code Overview
 
