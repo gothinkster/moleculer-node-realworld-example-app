@@ -72,6 +72,26 @@ module.exports = {
 		// logRequestParams: "info",
 		// logResponseData: "info",
 
+		onError(req, res, err) {
+			// Return with the error as JSON object
+			res.setHeader("Content-type", "application/json; charset=utf-8");
+			res.writeHead(err.code || 500);
+
+			if (err.code == 422) {
+				let o = {};
+				err.data.forEach(e => {
+					let field = e.field.split(".").pop();
+					o[field] = e.message;
+				});
+
+				res.end(JSON.stringify({ errors: o }, null, 2));				
+			} else {
+				const errObj = _.pick(err, ["name", "message", "code", "type", "data"]);
+				res.end(JSON.stringify(errObj, null, 2));
+			}
+			this.logResponse(req, res, err? err.ctx : null);
+		}
+
 	},
 
 	methods: {
@@ -123,7 +143,7 @@ module.exports = {
 		 * @param {*} res 
 		 * @param {*} err 
 		 */
-		sendError(req, res, err) {
+		/*sendError(req, res, err) {
 			if (err.code == 422) {
 				res.setHeader("Content-type", "application/json; charset=utf-8");
 				res.writeHead(422);
@@ -139,12 +159,12 @@ module.exports = {
 			}			
 			
 			return this._sendError(req, res, err);
-		}
+		}*/
 	},
 
 	created() {
 		// Pointer to the original function
-		this._sendError = ApiGateway.methods.sendError.bind(this);
+		//this._sendError = ApiGateway.methods.sendError.bind(this);
 	}
 
 

@@ -3,6 +3,7 @@
 const { MoleculerClientError } = require("moleculer").Errors;
 
 const DbService 	= require("moleculer-db");
+const crypto 		= require("crypto");
 const bcrypt 		= require("bcrypt");
 const jwt 			= require("jsonwebtoken");
 
@@ -314,7 +315,7 @@ module.exports = {
 		 */
 		transformEntity(user, withToken, token) {
 			if (user) {
-				user.image = user.image || "";
+				user.image = user.image || "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email).digest("hex") + "?d=robohash";
 				if (withToken)
 					user.token = token || this.generateJWT(user);
 			}
@@ -330,7 +331,7 @@ module.exports = {
 		 * @param {Object?} loggedInUser 
 		 */
 		transformProfile(ctx, user, loggedInUser) {
-			user.image = user.image || "https://static.productionready.io/images/smiley-cyrus.jpg";
+			user.image = user.image || "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email).digest("hex") + "?d=robohash";
 
 			if (loggedInUser) {
 				return ctx.call("follows.has", { user: loggedInUser._id, follow: user._id })
