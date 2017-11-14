@@ -41,9 +41,11 @@ TRANSPORTER=nats://localhost:4222
 1. Checkout the repo `git clone https://github.com/ice-services/moleculer-realworld-example-app.git`
 2. `cd moleculer-realworld-example-app`
 3. Start with docker-compose: `docker compose up -d`
-	It starts 2 instances of all services in separated containers, a NATS server for communication and a [Traefik](https://traefik.io/) reverse proxy
+	
+	It starts all services in separated containers, a NATS server for communication, a MongoDB server for database and a [Traefik](https://traefik.io/) reverse proxy
 4. Open the http://docker-ip:3000
 5. Scale up services
+	
 	`docker-compose scale api=3 articles=2 users=2 comments=2 follows=2 favorites=2`
 
 ## Code Overview
