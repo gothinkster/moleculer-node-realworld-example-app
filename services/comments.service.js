@@ -1,12 +1,11 @@
 "use strict";
 
 const { ForbiddenError } = require("moleculer-web").Errors;
-const DbService = require("moleculer-db");
+const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "comments",
-	mixins: [DbService],
-	adapter: new DbService.MemoryAdapter({ filename: "./data/comments.db" }),
+	mixins: [DbService(process.env.DB_TYPE, "comments")],
 
 	/**
 	 * Default settings
@@ -50,7 +49,7 @@ module.exports = {
 			handler(ctx) {
 				let entity = ctx.params.comment;
 				entity.article = ctx.params.article;
-				entity.author = ctx.meta.user._id;
+				entity.author = ctx.meta.user._id.toString();
 				
 				return this.validateEntity(entity)
 					.then(() => {
@@ -90,7 +89,7 @@ module.exports = {
 				
 				return this.getById(ctx.params.id)
 					.then(comment => {
-						if (comment.author !== ctx.meta.user._id)
+						if (comment.author !== ctx.meta.user._id.toString())
 							return this.Promise.reject(new ForbiddenError());
 						
 						const update = {
@@ -116,6 +115,9 @@ module.exports = {
 		 * @returns {Object} List of comments
 		 */
 		list: {
+			cache: {
+				keys: ["#token", "article", "limit", "offset"]
+			},
 			params: {
 				article: { type: "string" },
 				limit: { type: "number", optional: true, convert: true },
@@ -181,10 +183,11 @@ module.exports = {
 			handler(ctx) {
 				return this.getById(ctx.params.id)
 					.then(comment => {
-						if (comment.author !== ctx.meta.user._id)
+						if (comment.author !== ctx.meta.user._id.toString())
 							return this.Promise.reject(new ForbiddenError());
 
-						return this.adapter.removeById(ctx.params.id);
+						return this.adapter.removeById(ctx.params.id)
+							.then(json => this.entityChanged("updated", json, ctx).then(() => json));
 					});	
 			}
 		}
@@ -227,7 +230,7 @@ module.exports = {
 					entity.id = entity._id;
 
 					if (loggedInUser) {
-						return ctx.call("follows.has", { user: loggedInUser._id, follow: entity.author._id })
+						return ctx.call("follows.has", { user: loggedInUser._id.toString(), follow: entity.author._id })
 							.then(res => {
 								entity.author.following = res;
 								return entity;
@@ -239,6 +242,25 @@ module.exports = {
 					return entity;
 				});
 
+		}
+	},
+
+	events: {
+		"cache.clean.comments"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.users"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.follows"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.articles"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
 		}
 	}
 };

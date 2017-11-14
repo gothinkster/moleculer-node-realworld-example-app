@@ -5,12 +5,11 @@ const { ForbiddenError } = require("moleculer-web").Errors;
 
 const _ = require("lodash");
 const slug = require("slug");
-const DbService = require("moleculer-db");
+const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "articles",
-	mixins: [DbService],
-	adapter: new DbService.MemoryAdapter({ filename: "./data/articles.db" }),
+	mixins: [DbService(process.env.DB_TYPE, "articles")],
 
 	/**
 	 * Default settings
@@ -35,14 +34,14 @@ module.exports = {
 			},
 			favorited(ids, articles, rule, ctx) {
 				if (ctx.meta.user)
-					return this.Promise.all(articles.map(article => ctx.call("favorites.has", { article: article._id, user: ctx.meta.user._id }).then(res => article.favorited = res)));
+					return this.Promise.all(articles.map(article => ctx.call("favorites.has", { article: article._id.toString(), user: ctx.meta.user._id.toString() }).then(res => article.favorited = res)));
 				else {
 					articles.forEach(article => article.favorited = false);
 					return this.Promise.resolve();
 				}
 			},
 			favoritesCount(ids, articles, rule, ctx) {
-				return this.Promise.all(articles.map(article => ctx.call("favorites.count", { article: article._id }).then(count => article.favoritesCount = count)));
+				return this.Promise.all(articles.map(article => ctx.call("favorites.count", { article: article._id.toString() }).then(count => article.favoritesCount = count)));
 			}
 		},
 
@@ -80,7 +79,7 @@ module.exports = {
 					.then(() => {
 
 						entity.slug = slug(entity.title, { lower: true }) + "-" + (Math.random() * Math.pow(36, 6) | 0).toString(36);
-						entity.author = ctx.meta.user._id;
+						entity.author = ctx.meta.user._id.toString();
 						entity.createdAt = new Date();
 						entity.updatedAt = new Date();
 
@@ -123,7 +122,7 @@ module.exports = {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
-						if (article.author !== ctx.meta.user._id)
+						if (article.author !== ctx.meta.user._id.toString())
 							return this.Promise.reject(new ForbiddenError());
 
 						const update = {
@@ -151,6 +150,9 @@ module.exports = {
 		 * @returns {Object} List of articles
 		 */
 		list: {
+			cache: {
+				keys: ["#token", "tag", "author", "favorited", "limit", "offset"]
+			},
 			params: {
 				tag: { type: "string", optional: true },
 				author: { type: "string", optional: true },
@@ -239,6 +241,9 @@ module.exports = {
 		 */
 		feed: {
 			auth: "required",
+			cache: {
+				keys: ["#token", "limit", "offset"]
+			},
 			params: {
 				limit: { type: "number", optional: true, convert: true },
 				offset: { type: "number", optional: true, convert: true },
@@ -258,7 +263,7 @@ module.exports = {
 
 				return this.Promise.resolve()
 					.then(() => {
-						return ctx.call("follows.find", { fields: ["follow"], query: { user: ctx.meta.user._id } })
+						return ctx.call("follows.find", { fields: ["follow"], query: { user: ctx.meta.user._id.toString() } })
 							.then(list => {
 								const authors = _.uniq(_.compact(_.flattenDeep(list.map(o => o.follow))));
 								params.query.author = {"$in" : authors};
@@ -299,6 +304,9 @@ module.exports = {
 		 * @returns {Object} Article entity
 		 */
 		get: {
+			cache: {
+				keys: ["#token", "id"]
+			},
 			params: {
 				id: { type: "string" }
 			},
@@ -335,11 +343,12 @@ module.exports = {
 						if (!entity)
 							return this.Promise.reject(new MoleculerClientError("Article not found!", 404));
 
-						if (entity.author !== ctx.meta.user._id)
+						if (entity.author !== ctx.meta.user._id.toString())
 							return this.Promise.reject(new ForbiddenError());
 
 						return this.adapter.removeById(entity._id)
-							.then(() => ctx.call("favorites.removeByArticle", { article: entity._id }));
+							.then(() => ctx.call("favorites.removeByArticle", { article: entity._id }))
+							.then(json => this.entityChanged("removed", json, ctx).then(() => json));
 					});
 			}
 		},
@@ -365,7 +374,7 @@ module.exports = {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 							
-						return ctx.call("favorites.add", { article: article._id, user: ctx.meta.user._id }).then(() => article);
+						return ctx.call("favorites.add", { article: article._id.toString(), user: ctx.meta.user._id.toString() }).then(() => article);
 					})
 					.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
@@ -393,7 +402,7 @@ module.exports = {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
-						return ctx.call("favorites.delete", { article: article._id, user: ctx.meta.user._id }).then(() => article);
+						return ctx.call("favorites.delete", { article: article._id.toString(), user: ctx.meta.user._id.toString() }).then(() => article);
 					})
 					.then(doc => this.transformDocuments(ctx, { populate: ["author", "favorited", "favoritesCount"] }, doc))
 					.then(entity => this.transformResult(ctx, entity, ctx.meta.user));
@@ -406,6 +415,9 @@ module.exports = {
 		 * @returns {Object} Tag list
 		 */
 		tags: {
+			cache: {
+				keys: []
+			},
 			handler(ctx) {
 				return this.Promise.resolve()
 					.then(() => this.adapter.find({ fields: ["tagList"], sort: ["createdAt"] }))
@@ -426,6 +438,9 @@ module.exports = {
 		 * 
 		 */
 		comments: {
+			cache: {
+				keys: ["#token", "slug"]
+			},
 			params: {
 				slug: { type: "string" }
 			},
@@ -436,7 +451,7 @@ module.exports = {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
-						return ctx.call("comments.list", { article: article._id });
+						return ctx.call("comments.list", { article: article._id.toString() });
 					});
 			}
 		},	
@@ -464,7 +479,7 @@ module.exports = {
 						if (!article)
 							return this.Promise.reject(new MoleculerClientError("Article not found", 404));
 
-						return ctx.call("comments.create", { article: article._id, comment: ctx.params.comment });
+						return ctx.call("comments.create", { article: article._id.toString(), comment: ctx.params.comment });
 					});
 			}
 		},	
@@ -590,6 +605,29 @@ module.exports = {
 							return entity;
 						});
 				});*/
+		}
+	},
+	
+	events: {
+		"cache.clean.articles"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.users"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.comments"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.follows"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.favorites"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
 		}
 	}
 };

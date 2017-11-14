@@ -1,12 +1,11 @@
 "use strict";
 
 const { MoleculerClientError } = require("moleculer").Errors;
-const DbService = require("moleculer-db");
+const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "follows",
-	mixins: [DbService],
-	adapter: new DbService.MemoryAdapter({ filename: "./data/follows.db" }),
+	mixins: [DbService(process.env.DB_TYPE, "follows")],
 
 	/**
 	 * Default settings
@@ -41,7 +40,8 @@ module.exports = {
 						if (item)
 							return this.Promise.reject(new MoleculerClientError("User has already followed"));
 
-						return this.adapter.insert({ follow, user, createdAt: new Date() });
+						return this.adapter.insert({ follow, user, createdAt: new Date() })
+							.then(json => this.entityChanged("created", json, ctx).then(() => json));
 					});
 			}
 		},
@@ -56,6 +56,9 @@ module.exports = {
 		 * @returns {Boolean} 
 		 */
 		has: {
+			cache: {
+				keys: ["article", "user"]
+			},
 			params: {
 				user: { type: "string" },
 				follow: { type: "string" },
@@ -76,6 +79,9 @@ module.exports = {
 		 * @returns {Number}
 		 */
 		count: {
+			cache: {
+				keys: ["article", "user"]
+			},
 			params: {
 				follow: { type: "string", optional: true },
 				user: { type: "string", optional: true },
@@ -113,7 +119,8 @@ module.exports = {
 						if (!item)
 							return this.Promise.reject(new MoleculerClientError("User has not followed yet"));
 
-						return this.adapter.removeById(item._id);
+						return this.adapter.removeById(item._id)
+							.then(json => this.entityChanged("removed", json, ctx).then(() => json));
 					});
 			}
 		}
@@ -131,5 +138,16 @@ module.exports = {
 		findByFollowAndUser(follow, user) {
 			return this.adapter.findOne({ follow, user });
 		},
+	},
+
+	events: {
+		"cache.clean.follows"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.users"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		}
 	}	
 };

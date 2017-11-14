@@ -2,15 +2,15 @@
 
 const { MoleculerClientError } = require("moleculer").Errors;
 
-const DbService 	= require("moleculer-db");
-const crypto 		= require("crypto");
+//const crypto 		= require("crypto");
 const bcrypt 		= require("bcrypt");
 const jwt 			= require("jsonwebtoken");
 
+const DbService = require("../mixins/db.mixin");
+
 module.exports = {
 	name: "users",
-	mixins: [DbService],
-	adapter: new DbService.MemoryAdapter({ filename: "./data/users.db" }),
+	mixins: [DbService(process.env.DB_TYPE, "users")],
 
 	/**
 	 * Default settings
@@ -110,6 +110,10 @@ module.exports = {
 		 * @returns {Object} Resolved user
 		 */
 		resolveToken: {
+			cache: {
+				keys: ["token"],
+				ttl: 60 * 60 // 1 hour
+			},			
 			params: {
 				token: "string"
 			},
@@ -140,6 +144,9 @@ module.exports = {
 		 */
 		me: {
 			auth: "required",
+			cache: {
+				keys: ["#token"]
+			},
 			handler(ctx) {
 				return this.getById(ctx.meta.user._id)
 					.then(user => {
@@ -216,6 +223,9 @@ module.exports = {
 		 * @returns {Object} User entity
 		 */
 		profile: {
+			cache: {
+				keys: ["#token", "username"]
+			},
 			params: {
 				username: { type: "string" }
 			},
@@ -251,7 +261,7 @@ module.exports = {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
 
-						return ctx.call("follows.add", { user: ctx.meta.user._id, follow: user._id })
+						return ctx.call("follows.add", { user: ctx.meta.user._id.toString(), follow: user._id.toString() })
 							.then(() => this.transformDocuments(ctx, {}, user));
 					})
 					.then(user => this.transformProfile(ctx, user, ctx.meta.user));
@@ -278,7 +288,7 @@ module.exports = {
 						if (!user)
 							return this.Promise.reject(new MoleculerClientError("User not found!", 404));
 
-						return ctx.call("follows.delete", { user: ctx.meta.user._id, follow: user._id })
+						return ctx.call("follows.delete", { user: ctx.meta.user._id.toString(), follow: user._id.toString() })
 							.then(() => this.transformDocuments(ctx, {}, user));
 					})
 					.then(user => this.transformProfile(ctx, user, ctx.meta.user));
@@ -315,7 +325,8 @@ module.exports = {
 		 */
 		transformEntity(user, withToken, token) {
 			if (user) {
-				user.image = user.image || "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email).digest("hex") + "?d=robohash";
+				//user.image = user.image || "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email).digest("hex") + "?d=robohash";
+				user.image = user.image || "";
 				if (withToken)
 					user.token = token || this.generateJWT(user);
 			}
@@ -331,10 +342,11 @@ module.exports = {
 		 * @param {Object?} loggedInUser 
 		 */
 		transformProfile(ctx, user, loggedInUser) {
-			user.image = user.image || "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email).digest("hex") + "?d=robohash";
+			//user.image = user.image || "https://www.gravatar.com/avatar/" + crypto.createHash("md5").update(user.email).digest("hex") + "?d=robohash";
+			user.image = user.image || "https://static.productionready.io/images/smiley-cyrus.jpg";
 
 			if (loggedInUser) {
-				return ctx.call("follows.has", { user: loggedInUser._id, follow: user._id })
+				return ctx.call("follows.has", { user: loggedInUser._id.toString(), follow: user._id.toString() })
 					.then(res => {
 						user.following = res;
 						return { profile: user };
@@ -345,5 +357,16 @@ module.exports = {
 
 			return { profile: user };
 		}
-	}
+	},
+
+	events: {
+		"cache.clean.users"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.follows"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		}
+	}	
 };
