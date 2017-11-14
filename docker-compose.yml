@@ -93,6 +93,8 @@ services:
 
   nats:
     image: nats
+    ports:
+      - "4222:4222"
 
   mongo:
     image: mongo
