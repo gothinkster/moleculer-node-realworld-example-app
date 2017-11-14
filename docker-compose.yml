@@ -6,12 +6,10 @@ services:
     build:
       context: .
     image: conduit
+    env_file: env
     environment:
-      SERVICEDIR: services
       SERVICES: api
       PORT: 3000
-      TRANSPORTER: nats://nats:4222
-      MONGO_URI: mongodb://mongo
     links:
       - nats
     depends_on:
@@ -29,11 +27,9 @@ services:
     build:
       context: .
     image: conduit
+    env_file: env
     environment:
-      SERVICEDIR: services
       SERVICES: articles
-      TRANSPORTER: nats://nats:4222
-      MONGO_URI: mongodb://mongo
     links:
       - nats
       - mongo
@@ -47,11 +43,9 @@ services:
     build:
       context: .
     image: conduit
+    env_file: env
     environment:
-      SERVICEDIR: services
       SERVICES: comments
-      TRANSPORTER: nats://nats:4222
-      MONGO_URI: mongodb://mongo
     links:
       - nats
       - mongo
@@ -65,11 +59,9 @@ services:
     build:
       context: .
     image: conduit
+    env_file: env
     environment:
-      SERVICEDIR: services
       SERVICES: favorites
-      TRANSPORTER: nats://nats:4222
-      MONGO_URI: mongodb://mongo
     links:
       - nats
       - mongo
@@ -83,11 +75,9 @@ services:
     build:
       context: .
     image: conduit
+    env_file: env
     environment:
-      SERVICEDIR: services
       SERVICES: follows
-      TRANSPORTER: nats://nats:4222
-      MONGO_URI: mongodb://mongo
     links:
       - nats
       - mongo
@@ -101,11 +91,9 @@ services:
     build:
       context: .
     image: conduit
+    env_file: env
     environment:
-      SERVICEDIR: services
       SERVICES: users
-      TRANSPORTER: nats://nats:4222
-      MONGO_URI: mongodb://mongo
     links:
       - nats
       - mongo
