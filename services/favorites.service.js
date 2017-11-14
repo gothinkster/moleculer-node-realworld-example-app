@@ -1,12 +1,12 @@
 "use strict";
 
 const { MoleculerClientError } = require("moleculer").Errors;
-const DbService = require("moleculer-db");
+const DbService = require("../mixins/db.mixin");
+
 
 module.exports = {
 	name: "favorites",
-	mixins: [DbService],
-	adapter: new DbService.MemoryAdapter({ filename: "./data/favorites.db" }),
+	mixins: [DbService("favorites")],
 
 	/**
 	 * Default settings
@@ -41,7 +41,9 @@ module.exports = {
 						if (item)
 							return this.Promise.reject(new MoleculerClientError("Articles has already favorited"));
 
-						return this.adapter.insert({ article, user, createdAt: new Date() });
+						return this.adapter.insert({ article, user, createdAt: new Date() })
+							.then(json => this.entityChanged("created", json, ctx).then(() => json));
+
 					});
 			}
 		},
@@ -56,6 +58,9 @@ module.exports = {
 		 * @returns {Boolean}
 		 */		
 		has: {
+			cache: {
+				keys: ["article", "user"]
+			},
 			params: {
 				article: { type: "string" },
 				user: { type: "string" },
@@ -77,6 +82,9 @@ module.exports = {
 		 * @returns {Number}
 		 */		
 		count: {
+			cache: {
+				keys: ["article", "user"]
+			},
 			params: {
 				article: { type: "string", optional: true },
 				user: { type: "string", optional: true },
@@ -114,7 +122,8 @@ module.exports = {
 						if (!item)
 							return this.Promise.reject(new MoleculerClientError("Articles has not favorited yet"));
 
-						return this.adapter.removeById(item._id);
+						return this.adapter.removeById(item._id)
+							.then(json => this.entityChanged("removed", json, ctx).then(() => json));
 					});
 			}
 		},
@@ -149,5 +158,20 @@ module.exports = {
 		findByArticleAndUser(article, user) {
 			return this.adapter.findOne({ article, user });
 		},
+	},
+
+	events: {
+		"cache.clean.favorites"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.users"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		},
+		"cache.clean.articles"() {
+			if (this.broker.cacher)
+				this.broker.cacher.clean(`${this.name}.*`);
+		}
 	}
 };
