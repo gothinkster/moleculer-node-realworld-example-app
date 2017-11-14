@@ -52,6 +52,24 @@ module.exports = {
 				let entity = ctx.params.user;
 				return this.validateEntity(entity)
 					.then(() => {
+						if (entity.username)
+							return this.adapter.findOne({ username: entity.username })
+								.then(found => {
+									if (found)
+										return Promise.reject(new MoleculerClientError("Username is exist!", 422, "", [{ field: "username", message: "is exist"}]));
+									
+								});
+					})
+					.then(() => {
+						if (entity.email)
+							return this.adapter.findOne({ email: entity.email })
+								.then(found => {
+									if (found)
+										return Promise.reject(new MoleculerClientError("Email is exist!", 422, "", [{ field: "email", message: "is exist"}]));
+								});
+							
+					})
+					.then(() => {
 						entity.password = bcrypt.hashSync(entity.password, 10);
 						entity.bio = entity.bio || "";
 						entity.image = entity.image || null;
@@ -186,8 +204,8 @@ module.exports = {
 						if (newData.username)
 							return this.adapter.findOne({ username: newData.username })
 								.then(found => {
-									if (found && found._id !== ctx.meta.user._id)
-										return Promise.reject(new MoleculerClientError("Usernam is exist!", 422, "", [{ field: "username", message: "is exist"}]));
+									if (found && found._id.toString() !== ctx.meta.user._id.toString())
+										return Promise.reject(new MoleculerClientError("Username is exist!", 422, "", [{ field: "username", message: "is exist"}]));
 									
 								});
 					})
@@ -195,7 +213,7 @@ module.exports = {
 						if (newData.email)
 							return this.adapter.findOne({ email: newData.email })
 								.then(found => {
-									if (found && found._id !== ctx.meta.user._id)
+									if (found && found._id.toString() !== ctx.meta.user._id.toString())
 										return Promise.reject(new MoleculerClientError("Email is exist!", 422, "", [{ field: "email", message: "is exist"}]));
 								});
 							
