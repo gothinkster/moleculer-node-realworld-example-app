@@ -6,7 +6,7 @@ const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "favorites",
-	mixins: [DbService(process.env.DB_TYPE, "favorites")],
+	mixins: [DbService("favorites")],
 
 	/**
 	 * Default settings

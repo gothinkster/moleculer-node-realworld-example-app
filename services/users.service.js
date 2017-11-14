@@ -10,7 +10,7 @@ const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "users",
-	mixins: [DbService(process.env.DB_TYPE, "users")],
+	mixins: [DbService("users")],
 
 	/**
 	 * Default settings

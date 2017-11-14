@@ -5,7 +5,7 @@ const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "comments",
-	mixins: [DbService(process.env.DB_TYPE, "comments")],
+	mixins: [DbService("comments")],
 
 	/**
 	 * Default settings

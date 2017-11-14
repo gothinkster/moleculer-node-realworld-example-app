@@ -1,0 +1,110 @@
+version: "3.0"
+
+services:
+
+  api:
+    image: conduit
+    environment:
+      SERVICEDIR: services
+      SERVICES: api
+      PORT: 3000
+    links:
+      - nats
+    depends_on:
+      - nats
+    labels:
+      - "traefik.enable=true"   
+      - "traefik.backend=api"
+      - "traefik.port=3000"
+      - "traefik.frontend.entryPoints=http"
+      - "traefik.frontend.rule=PathPrefix:/"
+    deploy:
+      replicas: 2
+
+  articles:
+    image: conduit
+    environment:
+      SERVICEDIR: services
+      SERVICES: articles
+    links:
+      - nats
+      - mongo
+    depends_on:
+      - nats
+      - mongo
+    deploy:
+      replicas: 2
+
+  comments:
+    image: conduit
+    environment:
+      SERVICEDIR: services
+      SERVICES: comments
+    links:
+      - nats
+      - mongo
+    depends_on:
+      - nats
+      - mongo
+    deploy:
+      replicas: 2
+
+  favorites:
+    image: conduit
+    environment:
+      SERVICEDIR: services
+      SERVICES: favorites
+    links:
+      - nats
+      - mongo
+    depends_on:
+      - nats
+      - mongo
+    deploy:
+      replicas: 2
+
+  follows:
+    image: conduit
+    environment:
+      SERVICEDIR: services
+      SERVICES: follows
+    links:
+      - nats
+      - mongo
+    depends_on:
+      - nats
+      - mongo
+    deploy:
+      replicas: 2
+
+  users:
+    image: conduit
+    environment:
+      SERVICEDIR: services
+      SERVICES: users
+    links:
+      - nats
+      - mongo
+    depends_on:
+      - nats
+      - mongo
+    deploy:
+      replicas: 2
+
+  nats:
+    image: nats
+
+  mongo:
+    image: mongo
+    volumes:
+      - ./db:/data/db
+
+  traefik:
+    image: traefik
+    command: --web --docker --docker.domain=docker.localhost --logLevel=INFO --docker.exposedbydefault=false
+    ports:
+      - "3000:80"
+      - "3001:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml

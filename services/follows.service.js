@@ -5,7 +5,7 @@ const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "follows",
-	mixins: [DbService(process.env.DB_TYPE, "follows")],
+	mixins: [DbService("follows")],
 
 	/**
 	 * Default settings

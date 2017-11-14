@@ -24,6 +24,19 @@ Alternately, to quickly try out this repo in the cloud, you can
 
 [![Remix on Glitch](https://cdn.glitch.com/2703baf2-b643-4da7-ab91-7ee2a2d00b5b%2Fremix-button.svg)](https://glitch.com/edit/#!/remix/realworld-moleculer)
 
+#### MongoDB persistent store
+Basically the services stores data in an NeDB persistent file storage in the `./data` folder. If you have to use MongoDB, set the `MONGO_URI` environment variable.
+```
+MONGO_URI=mongodb://localhost/conduit
+```
+
+#### Multiple instances
+You can run multiple instances of services. In this case you need to use a transporter i.e.: [NATS](https://nats.io). NATS is a lightweight & fast message broker. Download it and start with `gnatsd` command. After it started, set the `TRANSPORTER` env variable and start services.
+```
+TRANSPORTER=nats://localhost:4222
+```
+
+
 ### To get the Node server running locally with Docker
 TODO
 
@@ -34,10 +47,12 @@ TODO
 - [moleculer](https://github.com/ice-services/moleculer) - Microservices framework for NodeJS
 - [moleculer-web](https://github.com/ice-services/moleculer-web) - Official API Gateway service for Moleculer
 - [moleculer-db](https://github.com/ice-services/moleculer-db/tree/master/packages/moleculer-db#readme) - Database store service for Moleculer
+- [moleculer-db-adapter-mongo](https://github.com/ice-services/moleculer-db/tree/master/packages/moleculer-db-adapter-mongo#readme) - Database store service for MongoDB *(optional)*
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) - For generating JWTs used by authentication
 - [bcrypt](https://github.com/kelektiv/node.bcrypt.js) - Hashing user password
 - [lodash](https://github.com/lodash/lodash) - Utility library
 - [slug](https://github.com/dodo/node-slug) - For encoding titles into a URL-friendly format
+- [nats](https://github.com/dodo/node-slug) - [NATS](https://nats.io) transport driver for Moleculer *(optional)*
 
 ### Application Structure
 

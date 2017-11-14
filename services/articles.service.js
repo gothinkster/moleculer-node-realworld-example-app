@@ -9,7 +9,7 @@ const DbService = require("../mixins/db.mixin");
 
 module.exports = {
 	name: "articles",
-	mixins: [DbService(process.env.DB_TYPE, "articles")],
+	mixins: [DbService("articles")],
 
 	/**
 	 * Default settings
@@ -586,25 +586,6 @@ module.exports = {
 			if (!entity) return this.Promise.resolve();
 
 			return this.Promise.resolve(entity);
-				/*.then(entity => {
-					if (user) {
-						return ctx.call("favorites.has", { article: entity._id, user: user._id })
-							.then(favorited => {
-								entity.favorited = favorited;
-								return entity;
-							});
-					} else 
-						entity.favorited = false;
-
-					return entity;
-				})
-				.then(entity => {
-					return ctx.call("favorites.count", { article: entity._id })
-						.then(favoritesCount => {
-							entity.favoritesCount = favoritesCount;
-							return entity;
-						});
-				});*/
 		}
 	},
 	
