@@ -6,7 +6,7 @@ services:
     build:
       context: .
     image: conduit
-    env_file: env
+    env_file: docker-compose.env
     environment:
       SERVICES: api
       PORT: 3000
@@ -27,7 +27,7 @@ services:
     build:
       context: .
     image: conduit
-    env_file: env
+    env_file: docker-compose.env
     environment:
       SERVICES: articles
     links:
@@ -43,7 +43,7 @@ services:
     build:
       context: .
     image: conduit
-    env_file: env
+    env_file: docker-compose.env
     environment:
       SERVICES: comments
     links:
@@ -59,7 +59,7 @@ services:
     build:
       context: .
     image: conduit
-    env_file: env
+    env_file: docker-compose.env
     environment:
       SERVICES: favorites
     links:
@@ -75,7 +75,7 @@ services:
     build:
       context: .
     image: conduit
-    env_file: env
+    env_file: docker-compose.env
     environment:
       SERVICES: follows
     links:
@@ -91,7 +91,7 @@ services:
     build:
       context: .
     image: conduit
-    env_file: env
+    env_file: docker-compose.env
     environment:
       SERVICES: users
     links:
