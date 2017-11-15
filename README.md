@@ -1,4 +1,4 @@
-# ![RealWorld Example App](rw-molecular.png)
+# ![RealWorld Example App](rw-logo.png)
 
 > ### [Moleculer](http://moleculer.services/) codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
